@@ -1,14 +1,14 @@
 #ifndef _CPTOYC_LEXER_H
 #define _CPTOYC_LEXER_H
 #include <string>
-#include <slist>
+#include <forward_list>
 
 namespace CPToyC
 {
 	namespace Compiler
 	{
 		using std::string;
-		using std::list;
+		using std::forward_list;
 
 		enum class TokenKind
 		{
@@ -42,7 +42,7 @@ namespace CPToyC
 		class Lexer
 		{
 			public:
-			list<Token> tokenize(const string & filename);	
+			forward_list<Token> tokenize(const string & filename);
 			private:
 			string readfile(const string & filename);
 		};

@@ -33,8 +33,8 @@ namespace CPToyC
 			return str;
 		}
 
-		list<Token> Lexer::tokenize(const string &filename) {
-			list<Token> tokenList;
+        forward_list<Token> Lexer::tokenize(const string &filename) {
+            forward_list<Token> tokenList;
 			string str = readfile(filename);
 			std::cout << str << std::endl;
 			return tokenList;
