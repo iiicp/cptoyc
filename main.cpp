@@ -1,6 +1,7 @@
 #include <iostream>
 #include "lexer.h"
 #include <string>
+#include <exception>
 
 using namespace CPToyC::Compiler;
 
@@ -14,7 +15,12 @@ int main(int argc, char *argv[])
 	std::string filename = argv[1];
 	Lexer lexer;
 
-	lexer.tokenize(filename);
+    try {
+        list<Token> res = lexer.Tokenize(filename);
+        lexer.Dumplist(res);
+    } catch (const char *msg) {
+        std::cout << msg << std::endl;
+    }
 
 	return 0;
 }
