@@ -1,15 +1,26 @@
+/**********************************
+* File:     lexer.cpp
+*
+* Author:   caipeng
+*
+* Email:    iiicp@outlook.com
+*
+* Date:     2020/11/13
+***********************************/
+
 #include "lexer.h"
 #include <fstream>
 #include <iostream>
 #include <streambuf>
 #include <cctype>
-#include <set>
+#include <string>
+#include <unordered_map>
 
-namespace CPToyC
-{
-	namespace Compiler
-	{
+namespace CPToyC {
+	namespace Compiler {
+
 		using std::ifstream;
+        using std::string;
 
 		enum class State {
 		    Start, Identifier, Space, Int, Double, Char, String, Operator,
@@ -17,7 +28,7 @@ namespace CPToyC
 		};
 
         bool IsLetter(char ch) {
-            return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == '_';
+            return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || (ch == '_');
         }
 
         bool IsDigit(char ch) {
@@ -48,73 +59,25 @@ namespace CPToyC
         }
 
         TokenKind GetTokenKind(const string &str) {
-            if (str == "auto") {
-                return TokenKind::Auto;
-            }else if (str == "extern") {
-                return TokenKind::Extern;
-            }else if (str == "register") {
-                return TokenKind::Register;
-            }else if (str == "static") {
-                return TokenKind::Static;
-            }else if (str == "typedef") {
-                return TokenKind::Typedef;
-            }else if (str == "const") {
-                return TokenKind::Const;
-            }else if (str == "volatile") {
-                return TokenKind::Volatile;
-            }else if (str == "signed") {
-                return TokenKind::Signed;
-            }else if (str == "unsigned") {
-                return TokenKind::Unsigned;
-            }else if (str == "short") {
-                return TokenKind::Short;
-            }else if (str == "long") {
-                return TokenKind::Long;
-            }else if (str == "char") {
-                return TokenKind::Char;
-            }else if (str == "int") {
-                return TokenKind::Int;
-            }else if (str == "float") {
-                return TokenKind::Float;
-            }else if (str == "double") {
-                return TokenKind::Double;
-            }else if (str == "enum") {
-                return TokenKind::Enum;
-            }else if (str == "struct") {
-                return TokenKind::Struct;
-            }else if (str == "union") {
-                return TokenKind::Union;
-            }else if (str == "void") {
-                return TokenKind::Void;
-            }else if (str == "break") {
-                return TokenKind::Break;
-            }else if (str == "case") {
-                return TokenKind::Case;
-            }else if (str == "continue") {
-                return TokenKind::Continue;
-            }else if (str == "default") {
-                return TokenKind::Default;
-            }else if (str == "do") {
-                return TokenKind::Do;
-            }else if (str == "else") {
-                return TokenKind::Else;
-            }else if (str == "for") {
-                return TokenKind::For;
-            }else if (str == "goto") {
-                return TokenKind::Goto;
-            }else if (str == "if") {
-                return TokenKind::If;
-            }else if (str == "return") {
-                return TokenKind::Return;
-            }else if (str == "switch") {
-                return TokenKind::Switch;
-            }else if (str == "while") {
-                return TokenKind::While;
-            }else if (str == "sizeof") {
-                return TokenKind::Sizeof;
-            }else {
-                return TokenKind::ID;
+            static std::unordered_map<std::string, TokenKind> hash = {
+                    {"auto",TokenKind::Auto}, {"extern", TokenKind::Extern}, {"register", TokenKind::Register},
+                    {"static",TokenKind::Static},{"typedef", TokenKind::Typedef},{"const", TokenKind::Const},
+                    {"volatile", TokenKind::Volatile},{"signed",TokenKind::Signed},{"unsigned", TokenKind::Unsigned},
+                    {"short",TokenKind::Short},{"long",TokenKind::Long},{"char", TokenKind::Char},
+                    {"int", TokenKind::Int},{"float", TokenKind::Float},{"double",TokenKind::Double},
+                    {"enum",TokenKind::Enum},{"struct",TokenKind::Struct},{"union",TokenKind::Union},
+                    {"void",TokenKind::Void},{"break",TokenKind::Break},{"case", TokenKind::Case},
+                    {"continue",TokenKind::Continue},{"default",TokenKind::Default},{"do", TokenKind::Do},
+                    {"else",TokenKind::Else},{"for",TokenKind::For},{"goto",TokenKind::Goto},
+                    {"if", TokenKind::If},{"return",TokenKind::Return},{"switch", TokenKind::Switch},
+                    {"while", TokenKind::While},{"sizeof", TokenKind::Sizeof}
+            };
+
+            if (hash.find(str) != hash.end()) {
+                return hash[str];
             }
+
+            return TokenKind::ID;
         }
 
         char GetEscapeChar(char ch) {
@@ -162,14 +125,15 @@ namespace CPToyC
 			return str;
 		}
 
-		void Lexer::Dumplist(list<Token> &ls) {
+		void Lexer::Dumplist(list<std::shared_ptr<Token>> &ls) {
             for (auto &token : ls) {
-                std::cout << "( " << token.Content << ", " << token.Row << ", " << token.Col << " )" << std::endl;
+                token->ToString();
             }
         }
 
-        list<Token> Lexer::Tokenize(const string &filename) {
-            list<Token> tokenList;
+        list<std::shared_ptr<Token>> Lexer::Tokenize(const string &filename, list<Error> &errlist) {
+
+            list<std::shared_ptr<Token>> tokenList;
 			string s = ReadSourceFile(filename);
 			//std::cout << str << std::endl;
 			int i = 0, len = s.size();
@@ -187,7 +151,10 @@ namespace CPToyC
                     cursor++;
                     col++;
                 }
-                tokenList.push_back(Token(kind, val, row, tCol, base));
+                if (kind == TokenKind::ID) {
+                    kind = GetTokenKind(val);
+                }
+                tokenList.push_back(std::make_shared<Token>(kind, val, row, tCol, base));
             };
 
             // false -> should parse float
@@ -336,8 +303,9 @@ namespace CPToyC
                         }else if (IsOperator(s[i])) {
                             state = State::Operator;
                         }else {
-                            std::cerr << "not support " << s[i] << std::endl;
-                            throw "illegal state";
+                            std::string msg = std::string("not support state: ch = ") + s[i];
+                            errlist.emplace_back(Error(filename, msg, row, col));
+                            i++;
                         }
                         break;
                     }
@@ -360,11 +328,10 @@ namespace CPToyC
                     }
                     case State::Int: { // 0x123, 0123, 123ull
                         string val;
-                        bool res = ParseInt(val, i, col);
-                        if (res == false) {
-                            state = State::Double;
-                        }else {
+                        if (ParseInt(val, i, col)) {
                             state = State::Start;
+                        }else {
+                            state = State::Double;
                         }
                         break;
                     }
@@ -379,7 +346,12 @@ namespace CPToyC
                         i++;    //eat '
                         tCol++;
                         if (s[i] == '\0') {
-                            throw "unclosed char literal";
+                            std::string msg = std::string("unclosed char literal: ch = ") + s[i];
+                            errlist.emplace_back(Error(filename, msg, row, col));
+                            i++;
+                            col = tCol;
+                            state = State::Start;
+                            break;
                         }
                         char c;
                         if (s[i] == '\\') {
@@ -392,14 +364,19 @@ namespace CPToyC
                             tCol++;
                         }
                         if (s[i] != '\'') {
-                            throw "char literal too long";
+                            std::string msg = std::string("char literal too long: ch = ") + s[i];
+                            errlist.emplace_back(Error(filename, msg, row, col));
+                            i++;
+                            col = tCol;
+                            state = State::Start;
+                            break;
                         }
                         i++;        //eat '
                         tCol++;
 
                         string val;
                         val += c;
-                        tokenList.push_back(Token(TokenKind::IntLiteral, val, row, col));
+                        tokenList.push_back(std::make_shared<Token>(TokenKind::IntLiteral, val, row, col));
                         col = tCol;
                         state = State::Start;
                         break;
@@ -417,19 +394,27 @@ namespace CPToyC
                                 c = GetEscapeChar(s[p++]);
                                 tCol++;
                                 val += c;
+                            }else if (s[p] == '\n') {
+                                break;
                             }else {
                                 c = s[p++];
                                 val += c;
                                 tCol++;
                             }
                         }
-                        if (p >= len) {
-                            throw "unclosed string literal";
+                        if (p >= len || s[p] == '\n') {
+                            std::string msg = std::string("unclosed string literal: val = ") + val;
+                            errlist.emplace_back(Error(filename, msg, row, col));
+                            i = p;
+                            col = tCol;
+                            state = State::Start;
+                            break;
                         }else {
-                            tokenList.push_back(Token(TokenKind::StringLiteral, val, row, col));
+                            tokenList.push_back(std::make_shared<Token>(TokenKind::StringLiteral, val, row, col));
                             p++; // eat rhs "
                             i = p;
                             tCol++;
+                            col = tCol;
                             state = State::Start;
                         }
                         break;
@@ -450,7 +435,10 @@ namespace CPToyC
                             col++;
                         }
                         if (i == len) {
-                            throw "unclosed multicomment";
+                            std::string msg = std::string("unclosed multicomment: ch = ") + s[i];
+                            errlist.emplace_back(Error(filename, msg, row, col));
+                            state = State::Start;
+                            break;
                         } else {
                             i += 2;
                             col += 2;
