@@ -31,7 +31,7 @@ namespace CPToyC {
                 Kind = NodeKind::Null;
                 Tok = std::make_shared<Token>();
             }
-            Node(NodeKind kind, std::shared_ptr<Token> &tok): Kind(kind), Tok(tok) {};
+            Node(NodeKind kind, std::shared_ptr<Token> tok): Kind(kind), Tok(tok) {};
             virtual ~Node() {}
 
         private:
@@ -41,37 +41,37 @@ namespace CPToyC {
 
         class ExprNode : public Node {
         public:
-            ExprNode(NodeKind kind, std::shared_ptr<Token> &tok): Node(kind, tok) {}
+            ExprNode(NodeKind kind, std::shared_ptr<Token> tok): Node(kind, tok) {}
             virtual ~ExprNode() {}
         };
 
         class UnaryExprNode : public ExprNode {
         public:
-            UnaryExprNode(NodeKind kind, std::shared_ptr<Token> &tok, std::shared_ptr<Node> &lhs):ExprNode(kind, tok), Lhs(lhs) {}
+            UnaryExprNode(NodeKind kind, std::shared_ptr<Token> tok, std::shared_ptr<ExprNode> lhs):ExprNode(kind, tok), Lhs(lhs) {}
             virtual ~UnaryExprNode() {}
         private:
-            std::shared_ptr<Node> Lhs;
+            std::shared_ptr<ExprNode> Lhs;
         };
 
         class BinaryExprNode : public ExprNode {
         public:
-            BinaryExprNode(NodeKind kind, std::shared_ptr<Token> &tok, std::shared_ptr<Node> &lhs, std::shared_ptr<Node> &rhs)
+            BinaryExprNode(NodeKind kind, std::shared_ptr<Token> tok, std::shared_ptr<ExprNode> lhs, std::shared_ptr<ExprNode> rhs)
                 :ExprNode(kind, tok), Lhs(lhs), Rhs(rhs) {}
             virtual ~BinaryExprNode() {}
         private:
-            std::shared_ptr<Node> Lhs;
-            std::shared_ptr<Node> Rhs;
+            std::shared_ptr<ExprNode> Lhs;
+            std::shared_ptr<ExprNode> Rhs;
         };
 
         class TernaryExprNode : public ExprNode {
         public:
-            TernaryExprNode(NodeKind kind, std::shared_ptr<Token> &tok, std::shared_ptr<Node> &cond, std::shared_ptr<Node> &then,
-                            std::shared_ptr<Node> &els):ExprNode(kind, tok), Cond(cond), Then(then), Els(els) {}
+            TernaryExprNode(NodeKind kind, std::shared_ptr<Token> tok, std::shared_ptr<ExprNode> cond, std::shared_ptr<ExprNode> then,
+                            std::shared_ptr<ExprNode> els):ExprNode(kind, tok), Cond(cond), Then(then), Els(els) {}
             virtual ~TernaryExprNode() {}
         private:
-            std::shared_ptr<Node> Cond;
-            std::shared_ptr<Node> Then;
-            std::shared_ptr<Node> Els;
+            std::shared_ptr<ExprNode> Cond;
+            std::shared_ptr<ExprNode> Then;
+            std::shared_ptr<ExprNode> Els;
         };
 
         class ProgramNode : public Node {

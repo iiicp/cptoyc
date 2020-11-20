@@ -65,10 +65,10 @@ namespace CPToyC {
                 Base = base;
             }
 
-            string KindToStr();
+            static string KindToStr(TokenKind kind);
 
             void ToString() {
-                std::cout << "( " << Content << ", " << KindToStr() << ", row: " << Row << ", col: " << Col << " )" << std::endl;
+                std::cout << "( " << Content << ", " << KindToStr(Kind) << ", row: " << Row << ", col: " << Col << " )" << std::endl;
             }
         };
     }

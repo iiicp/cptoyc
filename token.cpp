@@ -12,8 +12,8 @@
 
 namespace CPToyC {
     namespace Compiler {
-        string Token::KindToStr() {
-            switch (Kind) {
+        string Token::KindToStr(TokenKind kind) {
+            switch (kind) {
                 case TokenKind::ID:
                     return "ID";
                 case TokenKind::Auto:
@@ -163,6 +163,8 @@ namespace CPToyC {
                     return "Semicolon";
                 case TokenKind::Ellipsis:
                     return "Ellipsis";
+                default:
+                    return "EOF";
             }
         }
     }
