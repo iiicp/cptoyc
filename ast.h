@@ -18,8 +18,8 @@ namespace CPToyC {
     namespace Compiler {
 
         enum class NodeKind {
-            Null, Add, Sub, Mul, Div, Mod, BitAnd, BitOr, BitXor, BitNot, SHL, SHR, Eq, UnEq,
-            LT, LE, RT, RE, Assign, Ternary, PreInc, PreDec, PostInc, PostDec,
+            Null, Add, Sub, Mul, Div, Mod, BitAnd, BitOr, BitXor, BitNot, LSH, RSH, Eq, UnEq,
+            LT, LE, GT, GE, Assign, Ternary, PreInc, PreDec, PostInc, PostDec,
             AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, SHLAssign,
             SHRAssign, Comma, Member, Addr, Deref, LogicalNot, LogicalAnd, LogicalOr,
             Var, IntNum, FloatNum, Case

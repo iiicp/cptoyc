@@ -28,7 +28,7 @@ namespace CPToyC {
                 :Tokens(tokens), ErrLists(errors), Filename(filename), Cursor(tokens.begin()), End(tokens.end()) {}
             std::list<std::shared_ptr<ExprNode>> Parse();
         private:
-            std::shared_ptr<Token> NextToken();
+            void NextToken();
             std::shared_ptr<Token> PeekToken();
             std::shared_ptr<Token> CurrentToken();
             TokenKind CurrentTokenKind();
