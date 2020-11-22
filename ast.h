@@ -27,14 +27,10 @@ namespace CPToyC {
 
         class Node {
         public:
-            Node() {
-                Kind = NodeKind::Null;
-                Tok = std::make_shared<Token>();
-            }
             Node(NodeKind kind, std::shared_ptr<Token> tok): Kind(kind), Tok(tok) {};
             virtual ~Node() {}
 
-        private:
+        protected:
             NodeKind Kind;
             std::shared_ptr<Token> Tok;
         };
@@ -43,6 +39,12 @@ namespace CPToyC {
         public:
             ExprNode(NodeKind kind, std::shared_ptr<Token> tok): Node(kind, tok) {}
             virtual ~ExprNode() {}
+        };
+
+        class NumNode : public ExprNode {
+        public:
+            NumNode(NodeKind kind, std::shared_ptr<Token> tok) : ExprNode(kind, tok) {}
+            virtual ~NumNode() {}
         };
 
         class UnaryExprNode : public ExprNode {
@@ -74,53 +76,53 @@ namespace CPToyC {
             std::shared_ptr<ExprNode> Els;
         };
 
-        class ProgramNode : public Node {
-        public:
-            ProgramNode() {}
-            virtual ~ProgramNode() {}
-
-        private:
-            std::list<std::shared_ptr<ExprNode>> Exprs;
-        };
-
-        class ReturnStmtNode : public Node {
-        public:
-            ReturnStmtNode() {}
-            virtual ~ReturnStmtNode() {}
-        private:
-            std::shared_ptr<Node> Expr;
-        };
-
-        class IfStmtNode : public Node {
-        public:
-            IfStmtNode() {}
-            virtual ~IfStmtNode() {}
-
-        private:
-            std::shared_ptr<Node> Cond;
-            std::shared_ptr<Node> Then;
-            std::shared_ptr<Node> Els;
-        };
-
-        class WhileStmtNode : public Node {
-        public:
-            WhileStmtNode() {}
-            virtual ~WhileStmtNode() {}
-
-        private:
-            std::shared_ptr<Node> Cond;
-            std::shared_ptr<Node> Then;
-        };
-
-        class DoWhileStmtNode : public Node {
-        public:
-            DoWhileStmtNode() {}
-            virtual ~DoWhileStmtNode() {}
-
-        private:
-            std::shared_ptr<Node> Stmt;
-            std::shared_ptr<Node> Cond;
-        };
+//        class ProgramNode : public Node {
+//        public:
+//            ProgramNode() {}
+//            virtual ~ProgramNode() {}
+//
+//        private:
+//            std::list<std::shared_ptr<ExprNode>> Exprs;
+//        };
+//
+//        class ReturnStmtNode : public Node {
+//        public:
+//            ReturnStmtNode() {}
+//            virtual ~ReturnStmtNode() {}
+//        private:
+//            std::shared_ptr<Node> Expr;
+//        };
+//
+//        class IfStmtNode : public Node {
+//        public:
+//            IfStmtNode() {}
+//            virtual ~IfStmtNode() {}
+//
+//        private:
+//            std::shared_ptr<Node> Cond;
+//            std::shared_ptr<Node> Then;
+//            std::shared_ptr<Node> Els;
+//        };
+//
+//        class WhileStmtNode : public Node {
+//        public:
+//            WhileStmtNode() {}
+//            virtual ~WhileStmtNode() {}
+//
+//        private:
+//            std::shared_ptr<Node> Cond;
+//            std::shared_ptr<Node> Then;
+//        };
+//
+//        class DoWhileStmtNode : public Node {
+//        public:
+//            DoWhileStmtNode() {}
+//            virtual ~DoWhileStmtNode() {}
+//
+//        private:
+//            std::shared_ptr<Node> Stmt;
+//            std::shared_ptr<Node> Cond;
+//        };
     }
 }
 

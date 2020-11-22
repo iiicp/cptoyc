@@ -20,55 +20,48 @@ namespace CPToyC {
         using std::string;
 
         enum class TokenKind {
-            Begin,
-            // Identifier
-            ID,
-            // keyword
-            Auto, Break, Case, Char, Const, Continue, Default, Do,
-            Double, Else, Enum, Extern, Float, For, Goto, If,
-            Int, Long, Register, Return, Short, Signed, Sizeof, Static,
-            Struct, Switch, Typedef, Union, Unsigned, Void, Volatile, While,
-            // const literal
-            IntLiteral, UIntLiteral, LongLiteral, ULongLiteral, LLongLiteral, ULLongLiteral,
-            FloatLiteral, DoubleLiteral, LDoubleLiteral, StringLiteral, WStringLiteral,
-            // operator
-            Comma, Question, Colon, Assign, BitorAssign, BitXorAssign,
-            BitAndAssign, LshAssign, RshAssign, AddAssign, SubAssign, MulAssign,
-            DivAssign, ModAssign, LogicOr, LogicAnd, Bitor, BitXor, BitAnd,
-            Equal, UnEqual, Great, Less, GreatEq, LessEq,
-            LSH, RSH, Add, Sub, Mul, Div, Mod, Inc, Dec,
-            LogicNot, BitNot, Dot, Pointer, LParent, RParent, LBracket, RBracket,
-            // punctuation
-            LBrace, RBrace, Semicolon, Ellipsis,
-            End
+            BEGIN,
+    #define TOKEN(k, s) k,
+    #include "token.h.in"
+    #undef TOKEN
         };
+
+        struct TokenLoc {
+            const char *Filename;
+            int Row;
+            int Col;
+        };
+
+        union TokenVal {
+            long i;
+            double d;
+            float f;
+            const char *p;
+        };
+
+        string KindToStr(TokenKind kind);
+        TokenKind StrToKind(string str);
 
         class Token {
         public:
             TokenKind Kind;
-            string Content;
-            int Row, Col;
-            int Base;
+            struct TokenLoc Loc;
+            union TokenVal Val;
 
-            Token() {
-                Kind = TokenKind::Begin;
-                Row = -1;
-                Col = -1;
-                Base = 10;
-            }
-
-            Token(TokenKind kind, const string & content, int row, int col, int base = 10) {
+            Token(TokenKind kind) {
                 Kind = kind;
-                Content = content;
-                Row = row;
-                Col = col;
-                Base = base;
             }
-
-            static string KindToStr(TokenKind kind);
 
             void ToString() {
-                std::cout << "( " << Content << ", " << KindToStr(Kind) << ", row: " << Row << ", col: " << Col << " )" << std::endl;
+                if (Kind >= TokenKind::INTCONST && Kind <= TokenKind::ULLONGCONST) {
+                    std::cout << "( " << KindToStr(Kind) << ", val: " << Val.i << ", row: " << Loc.Row << ", col: " << Loc.Col << " )" << std::endl;
+                }else if (Kind == TokenKind::FLOATCONST) {
+                    std::cout << "( " << KindToStr(Kind) << ", val: " << Val.f << ", row: " << Loc.Row << ", col: " << Loc.Col << " )" << std::endl;
+                }else if (Kind == TokenKind::DOUBLECONST || Kind == TokenKind::LDOUBLECONST) {
+                    std::cout << "( " << KindToStr(Kind) << ", val: " << Val.d << ", row: " << Loc.Row << ", col: " << Loc.Col << " )" << std::endl;
+                }else {
+                    std::cout << "( " << KindToStr(Kind) << ", val: " << Val.p << ", row: " << Loc.Row << ", col: " << Loc.Col << " )" << std::endl;
+                }
             }
         };
     }

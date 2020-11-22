@@ -25,7 +25,7 @@ namespace CPToyC {
                 Col = -1;
             }
 
-            Error(const std::string &filename, const std::string &msg, int row = -1, int col = -1) {
+            Error(const std::string filename, const std::string msg, int row = -1, int col = -1) {
                 Filename = filename;
                 Msg = msg;
                 Row = row;

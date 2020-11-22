@@ -58,28 +58,6 @@ namespace CPToyC {
                    ch == '?' || ch == ',' || ch == ';' || ch == ':' || ch == '=' || ch == '~';
         }
 
-        TokenKind GetTokenKind(const string &str) {
-            static std::unordered_map<std::string, TokenKind> hash = {
-                    {"auto",TokenKind::Auto}, {"extern", TokenKind::Extern}, {"register", TokenKind::Register},
-                    {"static",TokenKind::Static},{"typedef", TokenKind::Typedef},{"const", TokenKind::Const},
-                    {"volatile", TokenKind::Volatile},{"signed",TokenKind::Signed},{"unsigned", TokenKind::Unsigned},
-                    {"short",TokenKind::Short},{"long",TokenKind::Long},{"char", TokenKind::Char},
-                    {"int", TokenKind::Int},{"float", TokenKind::Float},{"double",TokenKind::Double},
-                    {"enum",TokenKind::Enum},{"struct",TokenKind::Struct},{"union",TokenKind::Union},
-                    {"void",TokenKind::Void},{"break",TokenKind::Break},{"case", TokenKind::Case},
-                    {"continue",TokenKind::Continue},{"default",TokenKind::Default},{"do", TokenKind::Do},
-                    {"else",TokenKind::Else},{"for",TokenKind::For},{"goto",TokenKind::Goto},
-                    {"if", TokenKind::If},{"return",TokenKind::Return},{"switch", TokenKind::Switch},
-                    {"while", TokenKind::While},{"sizeof", TokenKind::Sizeof}
-            };
-
-            if (hash.find(str) != hash.end()) {
-                return hash[str];
-            }
-
-            return TokenKind::ID;
-        }
-
         char GetEscapeChar(char ch) {
             switch (ch) {
                 case 'a':
@@ -151,12 +129,71 @@ namespace CPToyC {
                     cursor++;
                     col++;
                 }
+
+                // ID or Keyword
                 if (kind == TokenKind::ID) {
-                    kind = GetTokenKind(val);
+                    kind = StrToKind(val);
                 }
-                tokenList.push_back(std::make_shared<Token>(kind, val, row, tCol, base));
+
+                std::shared_ptr<Token> token = std::make_shared<Token>(kind);
+                token->Loc = {filename.c_str(), row, tCol};
+                if (kind >= TokenKind::INTCONST && kind <= TokenKind::ULLONGCONST) {
+                    token->Val.i = strtol(val.c_str(), nullptr, base);
+                }else if (kind == TokenKind::FLOATCONST) {
+                    token->Val.f = strtof(val.c_str(), nullptr);
+                }else if (kind == TokenKind::DOUBLECONST || kind == TokenKind::LDOUBLECONST) {
+                    token->Val.d = strtod(val.c_str(), nullptr);
+                }else {
+                    // need alloc memory
+                    token->Val.p = (new string(val))->c_str();
+                }
+                tokenList.push_back(token);
             };
 
+            /**
+             * integer-constant:
+             *       decimal-constant integer-suffix(opt)
+             *       octal-constant integer-suffix(opt)
+             *       hexadecimal-constant integer-suffix(opt)
+             *
+             *   decimal-constant:
+             *       nonzero-digit
+             *       decimal-constant digit
+             *
+             *   octal-constant:
+             *       0
+             *       octal-constant octal-digit
+             *
+             *   hexadecimal-constant:
+             *       hexadecimal-prefix hexadecimal-digit
+             *       hexadecimal-constant hexadecimal-digit
+             *
+             *   hexadecimal-prefix: one of
+             *       0x 0X
+             *
+             *   nonzero-digit: one of
+             *       1 2 3 4 5 6 7 8 9
+             *
+             *   octal-digit: one of
+             *       0 1 2 3 4 5 6 7
+             *
+             *   hexadecimal-digit: one of
+             *       0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F
+             *
+             *   integer-suffix:
+             *       unsigned-suffix long-suffix(opt)
+             *       unsigned-suffix long-long-suffix
+             *       long-suffix unsigned-suffix(opt)
+             *       long-long-suffix unsigned-suffixopt
+             *
+             *   unsigned-suffix: one of
+             *       u U
+             *
+             *   long-suffix: one of
+             *       l L
+             *   long-long-suffix: one of
+             *       l l L L
+             */
             // false -> should parse float
             auto ParseInt = [&](string &val, int &i, int &col) -> bool {
                 int begin = i, cur = i;
@@ -188,24 +225,24 @@ namespace CPToyC {
                         cur++;
                         if (IndexLegal(cur) && (s[cur] == 'l' || s[cur] == 'L')) {
                             cur++;
-                            InsertToken(TokenKind::ULLongLiteral, val, begin, cur - 1, col, i, base);
+                            InsertToken(TokenKind::ULLONGCONST, val, begin, cur - 1, col, i, base);
                         }else {
-                            InsertToken(TokenKind::ULongLiteral, val, begin, cur - 1, col, i, base);
+                            InsertToken(TokenKind::ULONGCONST, val, begin, cur - 1, col, i, base);
                         }
                     }else {
-                        InsertToken(TokenKind::UIntLiteral, val, begin, cur - 1, col, i, base);
+                        InsertToken(TokenKind::UINTCONST, val, begin, cur - 1, col, i, base);
                     }
                 }else {
                     if (IndexLegal(cur) && (s[cur] == 'l' || s[cur] == 'L')) {
                         cur++;
                         if (IndexLegal(cur) && (s[cur] == 'l' || s[cur] == 'L')) {
                             cur++;
-                            InsertToken(TokenKind::LLongLiteral, val, begin, cur - 1, col, i, base);
+                            InsertToken(TokenKind::LLONGCONST, val, begin, cur - 1, col, i, base);
                         }else {
-                            InsertToken(TokenKind::LongLiteral, val, begin, cur - 1, col, i, base);
+                            InsertToken(TokenKind::LONGCONST, val, begin, cur - 1, col, i, base);
                         }
                     }else {
-                        InsertToken(TokenKind::IntLiteral, val, begin, cur - 1, col, i, base);
+                        InsertToken(TokenKind::INTCONST, val, begin, cur - 1, col, i, base);
                     }
                 }
 
@@ -247,12 +284,12 @@ namespace CPToyC {
                 }
                 if (IndexLegal(cur) && (s[cur] == 'f' || s[cur] == 'F')) {
                     cur++;
-                    InsertToken(TokenKind::FloatLiteral, val, begin, cur-1, i, base);
+                    InsertToken(TokenKind::FLOATCONST, val, begin, cur-1, i, base);
                 }else if (IndexLegal(cur) && (s[cur] == 'l' || s[cur] == 'L')) {
                     cur++;
-                    InsertToken(TokenKind::LDoubleLiteral, val, begin, cur-1, i, base);
+                    InsertToken(TokenKind::LDOUBLECONST, val, begin, cur-1, i, base);
                 }else {
-                    InsertToken(TokenKind::DoubleLiteral, val, begin, cur-1, i, base);
+                    InsertToken(TokenKind::DOUBLECONST, val, begin, cur-1, i, base);
                 }
             };
 
@@ -269,6 +306,84 @@ namespace CPToyC {
                     }else {
                         ParseFloatWithBase(val, i, col, false, 10);
                     }
+                }
+            };
+
+            auto ParseChar = [&](string &val, int &i, int &col) {
+                int tCol = col;
+                i++;    //eat '
+                tCol++;
+                if (s[i] == '\0') {
+                    std::string msg = std::string("unclosed char literal: ch = ") + s[i];
+                    errlist.emplace_back(Error(filename, msg, row, col));
+                    i++;
+                    col = tCol;
+                    return;
+                }
+                char c;
+                if (s[i] == '\\') {
+                    i++;
+                    tCol++;
+                    c = GetEscapeChar(s[i++]);
+                    tCol++;
+                }else {
+                    c = s[i++];
+                    tCol++;
+                }
+                if (s[i] != '\'') {
+                    std::string msg = std::string("char literal too long: ch = ") + s[i];
+                    errlist.emplace_back(Error(filename, msg, row, col));
+                    i++;
+                    col = tCol;
+                    return;
+                }
+                i++;        //eat '
+                tCol++;
+
+                val += c;
+                auto token = std::make_shared<Token>(TokenKind::INTCONST);
+                token->Loc = {filename.c_str(), row, col};
+                token->Val.i = c;
+                tokenList.push_back(token);
+                col = tCol;
+            };
+
+            auto ParseString = [&](string &val, int &i, int &col) {
+                int tCol = col;
+                int p = i + 1;
+                tCol++;
+                while (IndexLegal(p) && s[p] != '"') {
+                    char c;
+                    if (s[p] == '\\') {
+                        p++;
+                        tCol++;
+                        c = GetEscapeChar(s[p++]);
+                        tCol++;
+                        val += c;
+                    }else if (s[p] == '\n') {
+                        break;
+                    }else {
+                        c = s[p++];
+                        val += c;
+                        tCol++;
+                    }
+                }
+                if (p >= len || s[p] == '\n') {
+                    std::string msg = std::string("unclosed string literal: val = ") + val;
+                    errlist.emplace_back(Error(filename, msg, row, col));
+                    i = p;
+                    col = tCol;
+                    return;
+                }else {
+                    auto token = std::make_shared<Token>(TokenKind::STRING);
+                    token->Loc = {filename.c_str(), row, col};
+                    token->Val.p = val.c_str();
+                    tokenList.push_back(token);
+                    p++; // eat rhs "
+                    i = p;
+                    tCol++;
+                    col = tCol;
+                    return;
                 }
             };
 
@@ -342,87 +457,20 @@ namespace CPToyC {
                         break;
                     }
                     case State::Char: {
-                        int tCol = col;
-                        i++;    //eat '
-                        tCol++;
-                        if (s[i] == '\0') {
-                            std::string msg = std::string("unclosed char literal: ch = ") + s[i];
-                            errlist.emplace_back(Error(filename, msg, row, col));
-                            i++;
-                            col = tCol;
-                            state = State::Start;
-                            break;
-                        }
-                        char c;
-                        if (s[i] == '\\') {
-                            i++;
-                            tCol++;
-                            c = GetEscapeChar(s[i++]);
-                            tCol++;
-                        }else {
-                            c = s[i++];
-                            tCol++;
-                        }
-                        if (s[i] != '\'') {
-                            std::string msg = std::string("char literal too long: ch = ") + s[i];
-                            errlist.emplace_back(Error(filename, msg, row, col));
-                            i++;
-                            col = tCol;
-                            state = State::Start;
-                            break;
-                        }
-                        i++;        //eat '
-                        tCol++;
-
                         string val;
-                        val += c;
-                        tokenList.push_back(std::make_shared<Token>(TokenKind::IntLiteral, val, row, col));
-                        col = tCol;
+                        ParseChar(val, i, col);
                         state = State::Start;
                         break;
                     }
                     case State::String: {
-                        int tCol = col;
-                        int p = i + 1;
                         string val;
-                        tCol++;
-                        while (IndexLegal(p) && s[p] != '"') {
-                            char c;
-                            if (s[p] == '\\') {
-                                p++;
-                                tCol++;
-                                c = GetEscapeChar(s[p++]);
-                                tCol++;
-                                val += c;
-                            }else if (s[p] == '\n') {
-                                break;
-                            }else {
-                                c = s[p++];
-                                val += c;
-                                tCol++;
-                            }
-                        }
-                        if (p >= len || s[p] == '\n') {
-                            std::string msg = std::string("unclosed string literal: val = ") + val;
-                            errlist.emplace_back(Error(filename, msg, row, col));
-                            i = p;
-                            col = tCol;
-                            state = State::Start;
-                            break;
-                        }else {
-                            tokenList.push_back(std::make_shared<Token>(TokenKind::StringLiteral, val, row, col));
-                            p++; // eat rhs "
-                            i = p;
-                            tCol++;
-                            col = tCol;
-                            state = State::Start;
-                        }
+                        ParseString(val, i, col);
+                        state = State::Start;
                         break;
                     }
                     case State::SingleComment: {
                         while (i < len && s[i] != '\n') {
-                            i++;
-                            col++;
+                            i++; col++;
                         }
                         state = State::Start;
                         break;
@@ -431,8 +479,7 @@ namespace CPToyC {
                         i += 2;
                         col += 2;
                         while (IndexLegal(i) && s[i] != '*' && IndexLegal(i+1) && s[i + 1] != '/') {
-                            i++;
-                            col++;
+                            i++; col++;
                         }
                         if (i == len) {
                             std::string msg = std::string("unclosed multicomment: ch = ") + s[i];
@@ -452,77 +499,77 @@ namespace CPToyC {
                             case '{':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::LBrace, val, begin, end, col, i);
+                                InsertToken(TokenKind::LBRACE, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case '}':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::RBrace, val, begin, end, col, i);
+                                InsertToken(TokenKind::RBRACE, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case '[':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::LBracket, val, begin, end, col, i);
+                                InsertToken(TokenKind::LBRACKET, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case ']':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::RBracket, val, begin, end, col, i);
+                                InsertToken(TokenKind::RBRACKET, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case '(':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::LParent, val, begin, end, col, i);
+                                InsertToken(TokenKind::LPAREN, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case ')':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::RParent, val, begin, end, col, i);
+                                InsertToken(TokenKind::RPAREN, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case ';':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::Semicolon, val, begin, end, col, i);
+                                InsertToken(TokenKind::SEMICOLON, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case ':':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::Colon, val, begin, end, col, i);
+                                InsertToken(TokenKind::COLON, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case ',':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::Comma, val, begin, end, col, i);
+                                InsertToken(TokenKind::COMMA, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case '~':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::BitNot, val, begin, end, col, i);
+                                InsertToken(TokenKind::BITNOT, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
                             case '?':
                             {
                                 int begin = i, end = i;
-                                InsertToken(TokenKind::Question, val, begin, end, col, i);
+                                InsertToken(TokenKind::QUESTION, val, begin, end, col, i);
                                 state = State::Start;
                                 break;
                             }
@@ -531,9 +578,9 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '.' && IndexLegal(i+2) && s[i+2]) {
                                     end += 2;
-                                    InsertToken(TokenKind::Ellipsis, val, begin, end, col, i);
+                                    InsertToken(TokenKind::ELLIPSE, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Dot, val, begin, end, col, i);
+                                    InsertToken(TokenKind::DOT, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -543,12 +590,12 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '+') {
                                     end++;
-                                    InsertToken(TokenKind::Inc, val, begin, end, col, i);
+                                    InsertToken(TokenKind::INC, val, begin, end, col, i);
                                 }else if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::AddAssign, val, begin, end, col, i);
+                                    InsertToken(TokenKind::ADD_ASSIGN, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Add, val, begin, end, col, i);
+                                    InsertToken(TokenKind::ADD, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -558,15 +605,15 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '-') {
                                     end++;
-                                    InsertToken(TokenKind::Dec, val, begin, end, col, i);
+                                    InsertToken(TokenKind::DEC, val, begin, end, col, i);
                                 }else if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::SubAssign, val, begin, end, col, i);
+                                    InsertToken(TokenKind::SUB_ASSIGN, val, begin, end, col, i);
                                 }else if (IndexLegal(i+1) && s[i+1] == '>') {
                                     end++;
-                                    InsertToken(TokenKind::Pointer, val, begin, end, col, i);
+                                    InsertToken(TokenKind::POINTER, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Sub, val, begin, end, col, i);
+                                    InsertToken(TokenKind::SUB, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -576,9 +623,9 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::MulAssign, val, begin, end, col, i);
+                                    InsertToken(TokenKind::MUL_ASSIGN, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Mul, val, begin, end, col, i);
+                                    InsertToken(TokenKind::MUL, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -588,9 +635,9 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::DivAssign, val, begin, end, col, i);
+                                    InsertToken(TokenKind::DIV_ASSIGN, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Div, val, begin, end, col, i);
+                                    InsertToken(TokenKind::DIV, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -600,9 +647,9 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::ModAssign, val, begin, end, col, i);
+                                    InsertToken(TokenKind::MOD_ASSIGN, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Mod, val, begin, end, col, i);
+                                    InsertToken(TokenKind::MOD, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -612,9 +659,9 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::Equal, val, begin, end, col, i);
+                                    InsertToken(TokenKind::EQUAL, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Assign, val, begin, end, col, i);
+                                    InsertToken(TokenKind::ASSIGN, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -624,9 +671,9 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::UnEqual, val, begin, end, col, i);
+                                    InsertToken(TokenKind::UNEQUAL, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::LogicNot, val, begin, end, col, i);
+                                    InsertToken(TokenKind::NOT, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -636,9 +683,9 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::BitXorAssign, val, begin, end, col, i);
+                                    InsertToken(TokenKind::BITXOR_ASSIGN, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::BitXor, val, begin, end, col, i);
+                                    InsertToken(TokenKind::BITXOR, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -649,16 +696,16 @@ namespace CPToyC {
                                 if (IndexLegal(i+1) && s[i+1] == '<') {
                                     if (IndexLegal(i+2) && s[i+2] == '=') {
                                         end+=2;
-                                        InsertToken(TokenKind::LshAssign, val, begin, end, col, i);
+                                        InsertToken(TokenKind::LSHIFT_ASSIGN, val, begin, end, col, i);
                                     }else {
                                         end++;
-                                        InsertToken(TokenKind::LSH, val, begin, end, col, i);
+                                        InsertToken(TokenKind::LSHIFT, val, begin, end, col, i);
                                     }
                                 }else if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::LessEq, val, begin, end, col, i);
+                                    InsertToken(TokenKind::LESS_EQ, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Less, val, begin, end, col, i);
+                                    InsertToken(TokenKind::LESS, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -669,15 +716,15 @@ namespace CPToyC {
                                 if (IndexLegal(i+1) && s[i+1] == '>') {
                                     if (IndexLegal(i+2) && s[i+2] == '=') {
                                         end+=2;
-                                        InsertToken(TokenKind::RshAssign, val, begin, end, col, i);
+                                        InsertToken(TokenKind::RSHIFT_ASSIGN, val, begin, end, col, i);
                                     }else {
-                                        InsertToken(TokenKind::RSH, val, begin, end, col, i);
+                                        InsertToken(TokenKind::RSHIFT, val, begin, end, col, i);
                                     }
                                 }else if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::GreatEq, val, begin, end, col, i);
+                                    InsertToken(TokenKind::GREAT_EQ, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Great, val, begin, end, col, i);
+                                    InsertToken(TokenKind::GREAT, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -687,12 +734,12 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '&') {
                                     end++;
-                                    InsertToken(TokenKind::LogicAnd, val, begin, end, col, i);
+                                    InsertToken(TokenKind::AND, val, begin, end, col, i);
                                 }else if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::BitAndAssign, val, begin, end, col, i);
+                                    InsertToken(TokenKind::BITAND_ASSIGN, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::BitAnd, val, begin, end, col, i);
+                                    InsertToken(TokenKind::BITAND, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;
@@ -702,12 +749,12 @@ namespace CPToyC {
                                 int begin = i, end = i;
                                 if (IndexLegal(i+1) && s[i+1] == '|') {
                                     end++;
-                                    InsertToken(TokenKind::LogicOr, val, begin, end, col, i);
+                                    InsertToken(TokenKind::OR, val, begin, end, col, i);
                                 }else if (IndexLegal(i+1) && s[i+1] == '=') {
                                     end++;
-                                    InsertToken(TokenKind::BitorAssign, val, begin, end, col, i);
+                                    InsertToken(TokenKind::BITOR_ASSIGN, val, begin, end, col, i);
                                 }else {
-                                    InsertToken(TokenKind::Bitor, val, begin, end, col, i);
+                                    InsertToken(TokenKind::BITOR, val, begin, end, col, i);
                                 }
                                 state = State::Start;
                                 break;

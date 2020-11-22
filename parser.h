@@ -29,12 +29,15 @@ namespace CPToyC {
             std::list<std::shared_ptr<ExprNode>> Parse();
         private:
             void NextToken();
-            std::shared_ptr<Token> PeekToken();
+            bool PeekToken(TokenKind kind);
+            void ExpectToken(TokenKind kind);
+
             std::shared_ptr<Token> CurrentToken();
             TokenKind CurrentTokenKind();
             NodeKind TokenKindToNodeKind(TokenKind kind);
 
-            void ExpectToken(TokenKind kind);
+            bool IsTypeName();
+            bool IsTypedefName();
 
             std::shared_ptr<ExprNode> ParseExpression();
             std::shared_ptr<ExprNode> ParseConstantExpression();
@@ -54,6 +57,7 @@ namespace CPToyC {
             std::shared_ptr<ExprNode> ParseUnaryExpression();
             std::shared_ptr<ExprNode> ParsePostfixExpression();
             std::shared_ptr<ExprNode> ParsePrimaryExpression();
+
         };
     }
 }
