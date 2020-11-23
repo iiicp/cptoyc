@@ -21,11 +21,10 @@ namespace CPToyC {
         };
 
 
-
         static std::unordered_map<string, TokenKind> sotHash = {
-                // string have hash implement
+                // must be string as key, not use const char *
 #define TOKEN(k, s) {s, TokenKind:##:k},
-#include "token.h.in2"
+#include "token.h.keyword"
 #undef TOKEN
         };
 

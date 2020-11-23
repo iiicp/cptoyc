@@ -29,7 +29,7 @@ namespace CPToyC {
             while (CurrentTokenKind() == TokenKind::COMMA) {
                 auto token = CurrentToken();
                 NextToken();
-                node = std::make_shared<BinaryExprNode>(NodeKind::Comma, token, node, ParseAssignmentExpression());
+                node = std::make_shared<BinaryExprNode>(NodeKind::COMMA, token, node, ParseAssignmentExpression());
             }
             return node;
         }
@@ -76,7 +76,7 @@ namespace CPToyC {
                 NextToken();
                 then = ParseExpression();
                 ExpectToken(TokenKind::COLON);
-                ternary = std::make_shared<TernaryExprNode>(NodeKind::Ternary, token, node, then, ParseConditionalExpression());
+                ternary = std::make_shared<TernaryExprNode>(NodeKind::TERNARY, token, node, then, ParseConditionalExpression());
                 return ternary;
             }
             return node;
@@ -94,7 +94,7 @@ namespace CPToyC {
             while (CurrentTokenKind() == TokenKind::OR) {
                 auto token = CurrentToken();
                 NextToken();
-                node = std::make_shared<BinaryExprNode>(NodeKind::LogicalOr, token, node, ParseLogicalAndExpression());
+                node = std::make_shared<BinaryExprNode>(NodeKind::OR, token, node, ParseLogicalAndExpression());
             }
             return node;
         }
@@ -111,7 +111,7 @@ namespace CPToyC {
             while (CurrentTokenKind() == TokenKind::AND) {
                 auto token = CurrentToken();
                 NextToken();
-                node = std::make_shared<BinaryExprNode>(NodeKind::LogicalAnd, token, node, ParseBitOrExpression());
+                node = std::make_shared<BinaryExprNode>(NodeKind::AND, token, node, ParseBitOrExpression());
             }
             return node;
         }
@@ -128,7 +128,7 @@ namespace CPToyC {
             while (CurrentTokenKind() == TokenKind::BITOR) {
                 auto token = CurrentToken();
                 NextToken();
-                node = std::make_shared<BinaryExprNode>(NodeKind::BitOr, token, node, ParseBitXorExpression());
+                node = std::make_shared<BinaryExprNode>(NodeKind::BITOR, token, node, ParseBitXorExpression());
             }
             return node;
         }
@@ -145,7 +145,7 @@ namespace CPToyC {
             while (CurrentTokenKind() == TokenKind::BITXOR) {
                 auto token = CurrentToken();
                 NextToken();
-                node = std::make_shared<BinaryExprNode>(NodeKind::BitXor, token, node, ParseBitAndExpression());
+                node = std::make_shared<BinaryExprNode>(NodeKind::BITXOR, token, node, ParseBitAndExpression());
             }
             return node;
         }
@@ -162,7 +162,7 @@ namespace CPToyC {
             while (CurrentTokenKind() == TokenKind::BITAND) {
                 auto token = CurrentToken();
                 NextToken();
-                node = std::make_shared<BinaryExprNode>(NodeKind::BitAnd, token, node, ParseEqualityExpression());
+                node = std::make_shared<BinaryExprNode>(NodeKind::BITAND, token, node, ParseEqualityExpression());
             }
             return node;
         }

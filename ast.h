@@ -18,11 +18,9 @@ namespace CPToyC {
     namespace Compiler {
 
         enum class NodeKind {
-            Null, Add, Sub, Mul, Div, Mod, BitAnd, BitOr, BitXor, BitNot, LSH, RSH, Eq, UnEq,
-            LT, LE, GT, GE, Assign, Ternary, PreInc, PreDec, PostInc, PostDec,
-            AddAssign, SubAssign, MulAssign, DivAssign, ModAssign, SHLAssign,
-            SHRAssign, Comma, Member, Addr, Deref, LogicalNot, LogicalAnd, LogicalOr,
-            Var, IntNum, FloatNum, Case
+#define ASTINFO(kind, pre, str, func) kind,
+#include "ast.h.in"
+#undef ASTINFO
         };
 
         class Node {
@@ -39,12 +37,6 @@ namespace CPToyC {
         public:
             ExprNode(NodeKind kind, std::shared_ptr<Token> tok): Node(kind, tok) {}
             virtual ~ExprNode() {}
-        };
-
-        class NumNode : public ExprNode {
-        public:
-            NumNode(NodeKind kind, std::shared_ptr<Token> tok) : ExprNode(kind, tok) {}
-            virtual ~NumNode() {}
         };
 
         class UnaryExprNode : public ExprNode {
@@ -74,6 +66,20 @@ namespace CPToyC {
             std::shared_ptr<ExprNode> Cond;
             std::shared_ptr<ExprNode> Then;
             std::shared_ptr<ExprNode> Els;
+        };
+
+        class ConstLiteralNode : public ExprNode {
+        public:
+            ConstLiteralNode(NodeKind kind, std::shared_ptr<Token> tok) : ExprNode(kind, tok) {}
+            virtual ~ConstLiteralNode() {}
+        };
+
+        class VarNode : public Node {
+        public:
+            union TokenVal Val;
+
+            VarNode(NodeKind kind, std::shared_ptr<Token> tok) : Node(kind, tok), Val(tok->Val) {}
+            virtual ~VarNode() {}
         };
 
 //        class ProgramNode : public Node {
