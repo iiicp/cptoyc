@@ -5,8 +5,9 @@
 // $ gcc -static -o tmp tmp.s
 // $ ./tmp
 
+#define ROW 10
 int print_board(int (*board)[10]) {
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < 10; j++)
       if (board[i][j])
 	printf("Q ");

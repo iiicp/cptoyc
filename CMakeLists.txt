@@ -1,4 +1,44 @@
 cmake_minimum_required(VERSION 3.14.1)
 project(cptoyc)
 set(CMAKE_CXX_STANDARD 17)
-add_executable(cptoyc lexer.h lexer.cpp main.cpp parser.cpp parser.h ast.cpp ast.h token.cpp token.h error.h)
+add_executable(cptoyc
+        lexer.h
+        lexer.cpp
+        main.cpp
+        token.h
+        MemoryBuffer.cpp
+        Preprocessor.h
+        Preprocessor.cpp
+        PreprocessorLexer.cpp
+        PreprocessorLexer.h
+        TokenKinds.cpp
+        TokenKinds.h
+        PPLexerChange.cpp
+        IdentifierTable.cpp
+        IdentifierTable.h
+        HeaderSearch.cpp
+        HeaderSearch.h
+        DirectoryLookup.h
+        HeaderMap.cpp
+        HeaderMap.h
+        MultipleIncludeOpt.h
+        MacroInfo.cpp
+        MacroInfo.h
+        PPMacroExpansion.cpp
+        MacroArgs.cpp
+        MacroArgs.h
+        TokenLexer.cpp
+        TokenLexer.h
+        PPDirectives.cpp
+        ScratchBuffer.cpp
+        ScratchBuffer.h
+        FileManager.cpp
+        FileManager.h
+        SourceLocation.cpp
+        SourceLocation.h
+        SourceManager.cpp
+        SourceManager.h
+        LiteralSupport.cpp
+        LiteralSupport.h
+        PPCaching.cpp
+        PPExpressions.cpp)
