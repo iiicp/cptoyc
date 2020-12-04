@@ -10,7 +10,9 @@
 
 #include "HeaderSearch.h"
 #include "HeaderMap.h"
+#include "FileManager.h"
 #include "IdentifierTable.h"
+#include "llvm/SmallString.h"
 #include <unistd.h>
 using namespace CPToyC::Compiler;
 
@@ -123,8 +125,7 @@ const char *DirectoryLookup::getName() const {
 const FileEntry *DirectoryLookup::LookupFile(const char *FilenameStart,
                                              const char *FilenameEnd,
                                              HeaderSearch &HS) const {
-//    llvm::SmallString<1024> TmpDir;
-    std::string TmpDir;
+    llvm::SmallString<1024> TmpDir;
     TmpDir.reserve(1024);
     if (isNormalDir()) {
         // Concatenate the requested file onto the directory.
@@ -132,7 +133,7 @@ const FileEntry *DirectoryLookup::LookupFile(const char *FilenameStart,
         TmpDir += getDir()->getName();
         TmpDir.push_back('/');
         TmpDir.append(FilenameStart, FilenameEnd);
-        return HS.getFileMgr().getFile(TmpDir.c_str(), TmpDir.c_str() + TmpDir.size());
+        return HS.getFileMgr().getFile(TmpDir.begin(), TmpDir.end());
     }
 
     if (isFramework())
@@ -166,9 +167,7 @@ const FileEntry *DirectoryLookup::DoFrameworkLookup(const char *FilenameStart,
     // Otherwise, construct the path to this framework dir.
 
     // FrameworkName = "/System/Library/Frameworks/"
-//    llvm::SmallString<1024> FrameworkName;
-    std::string FrameworkName;
-    FrameworkName.reserve(1024);
+    llvm::SmallString<1024> FrameworkName;
     FrameworkName += getFrameworkDir()->getName();
     if (FrameworkName.empty() || FrameworkName.back() != '/')
         FrameworkName.push_back('/');
@@ -200,8 +199,8 @@ const FileEntry *DirectoryLookup::DoFrameworkLookup(const char *FilenameStart,
 
     FrameworkName += "Headers/";
     FrameworkName.append(SlashPos+1, FilenameEnd);
-    if (const FileEntry *FE = FileMgr.getFile(FrameworkName.c_str(),
-                                              FrameworkName.c_str() + FrameworkName.size())) {
+    if (const FileEntry *FE = FileMgr.getFile(FrameworkName.begin(),
+                                              FrameworkName.end())) {
         return FE;
     }
 
@@ -209,8 +208,8 @@ const FileEntry *DirectoryLookup::DoFrameworkLookup(const char *FilenameStart,
     const char *Private = "Private";
     FrameworkName.insert(FrameworkName.begin()+OrigSize, Private,
                          Private+strlen(Private));
-    return FileMgr.getFile(FrameworkName.c_str(),
-                           FrameworkName.c_str() + FrameworkName.size());
+    return FileMgr.getFile(FrameworkName.begin(),
+                           FrameworkName.end());
 }
 
 
@@ -247,15 +246,13 @@ const FileEntry *HeaderSearch::LookupFile(const char *FilenameStart,
     // a subsequent include of "baz.h" should resolve to "whatever/foo/baz.h".
     // This search is not done for <> headers.
     if (CurFileEnt && !isAngled && !NoCurDirSearch) {
-//        llvm::SmallString<1024> TmpDir;
-        std::string TmpDir;
-        TmpDir.reserve(1024);
+        llvm::SmallString<1024> TmpDir;
         // Concatenate the requested file onto the directory.
         // FIXME: Portability.  Filename concatenation should be in sys::Path.
         TmpDir += CurFileEnt->getDir()->getName();
         TmpDir.push_back('/');
         TmpDir.append(FilenameStart, FilenameEnd);
-        if (const FileEntry *FE = FileMgr.getFile(TmpDir.c_str(), TmpDir.c_str() + TmpDir.size())) {
+        if (const FileEntry *FE = FileMgr.getFile(TmpDir.begin(), TmpDir.end())) {
             // Leave CurDir unset.
             // This file is a system header or C++ unfriendly if the old file is.
             //
@@ -278,7 +275,6 @@ const FileEntry *HeaderSearch::LookupFile(const char *FilenameStart,
     if (FromDir)
         i = FromDir-&SearchDirs[0];
 
-#if 0
     // Cache all of the lookups performed by this method.  Many headers are
     // multiply included, and the "pragma once" optimization prevents them from
     // being relex/pp'd, but they would still have to search through a
@@ -317,7 +313,6 @@ const FileEntry *HeaderSearch::LookupFile(const char *FilenameStart,
 
     // Otherwise, didn't find it. Remember we didn't find this.
     CacheLookup.second = SearchDirs.size();
-#endif
     return 0;
 }
 
@@ -344,7 +339,7 @@ LookupSubframeworkHeader(const char *FilenameStart,
     if (FrameworkPos == 0)
         return 0;
 
-    std::string FrameworkName(ContextName,
+    llvm::SmallString<1024> FrameworkName(ContextName,
                                           FrameworkPos+strlen(".framework/"));
 
     // Append Frameworks/HIToolbox.framework/
@@ -352,7 +347,6 @@ LookupSubframeworkHeader(const char *FilenameStart,
     FrameworkName.append(FilenameStart, SlashPos);
     FrameworkName += ".framework/";
 
-#if 0
     llvm::StringMapEntry<const DirectoryEntry *> &CacheLookup =
             FrameworkMap.GetOrCreateValue(FilenameStart, SlashPos);
     // Some other location?
@@ -375,25 +369,25 @@ LookupSubframeworkHeader(const char *FilenameStart,
         // framework.
         CacheLookup.setValue(Dir);
     }
-#endif
+
     const FileEntry *FE = 0;
 
     // Check ".../Frameworks/HIToolbox.framework/Headers/HIToolbox.h"
-    std::string HeadersFilename(FrameworkName);
+    llvm::SmallString<1024> HeadersFilename(FrameworkName);
     HeadersFilename += "Headers/";
     HeadersFilename.append(SlashPos+1, FilenameEnd);
-    if (!(FE = FileMgr.getFile(HeadersFilename.c_str(),
-                               HeadersFilename.c_str() + HeadersFilename.size()))) {
+    if (!(FE = FileMgr.getFile(HeadersFilename.begin(),
+                               HeadersFilename.end()))) {
 
         // Check ".../Frameworks/HIToolbox.framework/PrivateHeaders/HIToolbox.h"
         HeadersFilename = FrameworkName;
         HeadersFilename += "PrivateHeaders/";
-        HeadersFilename.append(SlashPos+1, FilenameEnd);
-        if (!(FE = FileMgr.getFile(HeadersFilename.c_str(),
-                                   HeadersFilename.c_str() + HeadersFilename.size())))
+        HeadersFilename.append(SlashPos + 1, FilenameEnd);
+        if (!(FE = FileMgr.getFile(HeadersFilename.begin(),
+                                   HeadersFilename.end()))) {
             return 0;
+        }
     }
-
     // This file is a system header or C++ unfriendly if the old file is.
     //
     // Note that the temporary 'DirInfo' is required here, as either call to

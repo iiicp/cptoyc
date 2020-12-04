@@ -113,7 +113,7 @@ namespace CPToyC {
 
         /// Stringify - Convert the specified string into a C string by escaping '\'
         /// and " characters.  This does not add surrounding ""'s to the string.
-        void Lexer::Stringify(std::vector<char> &Str) {
+        void Lexer::Stringify(llvm::SmallVectorImpl<char> &Str) {
             for (unsigned i = 0, e = Str.size(); i != e; ++i) {
                 if (Str[i] == '\\' || Str[i] == '"') {
                     Str.insert(Str.begin()+i, '\\');
@@ -278,29 +278,6 @@ namespace CPToyC {
                    true : false;
         }
 
-        /// getEscapedNewLineSize - Return the size of the specified escaped newline,
-        /// or 0 if it is not an escaped newline. P[-1] is known to be a "\" or a
-        /// trigraph equivalent on entry to this function.
-        unsigned Lexer::getEscapedNewLineSize(const char *Ptr) {
-            unsigned Size = 0;
-            while (isWhitespace(Ptr[Size])) {
-                ++Size;
-
-                if (Ptr[Size-1] != '\n' && Ptr[Size-1] != '\r')
-                    continue;
-
-                // If this is a \r\n or \n\r, skip the other half.
-                if ((Ptr[Size] == '\r' || Ptr[Size] == '\n') &&
-                    Ptr[Size-1] != Ptr[Size])
-                    ++Size;
-
-                return Size;
-            }
-
-            // Not an escaped newline, must be a \t or something else.
-            return 0;
-        }
-
         //===----------------------------------------------------------------------===//
         // Diagnostics forwarding code.
         //===----------------------------------------------------------------------===//
@@ -354,6 +331,30 @@ namespace CPToyC {
         //===----------------------------------------------------------------------===//
         // Trigraph and Escaped Newline Handling Code.
         //===----------------------------------------------------------------------===//
+
+        /// getEscapedNewLineSize - Return the size of the specified escaped newline,
+        /// or 0 if it is not an escaped newline. P[-1] is known to be a "\" or a
+        /// trigraph equivalent on entry to this function.
+        unsigned Lexer::getEscapedNewLineSize(const char *Ptr) {
+            unsigned Size = 0;
+            while (isWhitespace(Ptr[Size])) {
+                ++Size;
+
+                if (Ptr[Size-1] != '\n' && Ptr[Size-1] != '\r')
+                    continue;
+
+                // If this is a \r\n or \n\r, skip the other half.
+                if ((Ptr[Size] == '\r' || Ptr[Size] == '\n') &&
+                    Ptr[Size-1] != Ptr[Size])
+                    ++Size;
+
+                return Size;
+            }
+
+            // Not an escaped newline, must be a \t or something else.
+            return 0;
+        }
+
 
         /// SkipEscapedNewLines - If P points to an escaped newline (or a series of
         /// them), skip over them and return the first non-escaped-newline found,
@@ -458,7 +459,7 @@ namespace CPToyC {
             if (Ptr[0] == '\\') {
                 ++Size;
                 ++Ptr;
-                Slash:
+            Slash:
                 // Common case, backslash-char where the char is not whitespace.
                 if (!isWhitespace(Ptr[0])) return '\\';
 
@@ -508,8 +509,8 @@ namespace CPToyC {
             // Fast path, no $,\,? in identifier found.  '\' might be an escaped newline
             // or UCN, and ? might be a trigraph for '\', an escaped newline or UCN.
             // FIXME: UCNs.
-            if (C != '\\') {
-                FinishIdentifier:
+            if (C != '\\' && C != '?') {
+           FinishIdentifier:
                 const char *IdStart = BufferPtr;
                 FormTokenWithChars(Result, CurPtr, tok::identifier);
 
@@ -1224,6 +1225,7 @@ namespace CPToyC {
         void Lexer::LexTokenInternal(Token &Result) {
             LexNextToken:
                 Result.clearFlag(Token::NeedsCleaning);
+                Result.setIdentifierInfo(nullptr);
 
                 const char *CurPtr = BufferPtr;
                 if ((*CurPtr == ' ') || (*CurPtr == '\t')) {
@@ -1298,12 +1300,12 @@ namespace CPToyC {
                 case '\t':
                 case '\f':
                 case '\v': {
-                    SkipHorizontalWhitespace:
+               SkipHorizontalWhitespace:
                     Result.setFlag(Token::LeadingSpace);
                     if (SkipWhitespace(Result, CurPtr))
                         return; // KeepWhitespaceMode
 
-                    SkipIgnoredUnits:
+               SkipIgnoredUnits:
                     CurPtr = BufferPtr;
 
                     // If the next token is obviously a // or /* */ comment, skip it efficiently

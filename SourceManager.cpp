@@ -50,19 +50,14 @@ const MemoryBuffer *ContentCache::getBuffer() const {
 unsigned LineTableInfo::getLineTableFilenameID(const char *Ptr, unsigned Len) {
     // Look up the filename in the string table, returning the pre-existing value
     // if it exists.
-//            llvm::StringMapEntry<unsigned> &Entry =
-//                    FilenameIDs.GetOrCreateValue(Ptr, Ptr+Len, ~0U);
-//            if (Entry.getValue() != ~0U)
-//                return Entry.getValue();
-
-    std::string filename(Ptr, Ptr + Len);
-    if (FilenameIDs.find(filename) != FilenameIDs.end()) {
-        return FilenameIDs[filename];
-    }
+    llvm::StringMapEntry<unsigned> &Entry =
+            FilenameIDs.GetOrCreateValue(Ptr, Ptr+Len, ~0U);
+    if (Entry.getValue() != ~0U)
+        return Entry.getValue();
 
     // Otherwise, assign this the next available ID.
-//            Entry.setValue(FilenamesByID.size());
-    FilenamesByID.push_back(filename);
+    Entry.setValue(FilenamesByID.size());
+    FilenamesByID.push_back(&Entry);
     return FilenamesByID.size()-1;
 }
 
@@ -242,12 +237,12 @@ SourceManager::~SourceManager() {
     // dtors, but we call the deallocate method for completeness.
     for (unsigned i = 0, e = MemBufferInfos.size(); i != e; ++i) {
         MemBufferInfos[i]->~ContentCache();
-//                ContentCacheAlloc.Deallocate(MemBufferInfos[i]);
+        ContentCacheAlloc.Deallocate(MemBufferInfos[i]);
     }
-    for (std::map<const FileEntry*, ContentCache*>::iterator
+    for (llvm::DenseMap<const FileEntry*, ContentCache*>::iterator
                  I = FileInfos.begin(), E = FileInfos.end(); I != E; ++I) {
         I->second->~ContentCache();
-//                ContentCacheAlloc.Deallocate(I->second);
+        ContentCacheAlloc.Deallocate(I->second);
     }
 }
 

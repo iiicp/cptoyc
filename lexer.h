@@ -12,7 +12,7 @@
 #define _CPTOYC_LEXER_H
 #include <memory>
 #include <map>
-#include <vector>
+#include "llvm/SmallVector.h"
 #include <unordered_map>
 #include "PreprocessorLexer.h"
 
@@ -170,7 +170,7 @@ namespace CPToyC {
 
             /// Stringify - Convert the specified string into a C string by escaping '\'
             /// and " characters.  This does not add surrounding ""'s to the string.
-            static void Stringify(std::vector<char> &Str);
+            static void Stringify(llvm::SmallVectorImpl<char> &Str);
 
             /// MeasureTokenLength - Relex the token at the specified location and return
             /// its length in bytes in the input file.  If the token needs cleaning (e.g.

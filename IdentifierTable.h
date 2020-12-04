@@ -11,21 +11,34 @@
 #ifndef CPTOYC_IDENTIFIERTABLE_H
 #define CPTOYC_IDENTIFIERTABLE_H
 
-#include <unordered_map>
+#include "llvm/StringMap.h"
+#include "llvm/SmallString.h"
+#include "llvm/OwningPtr.h"
+#include "llvm/PointerLikeTypeTraits.h"
+#include "TokenKinds.h"
 #include <string>
 #include <cassert>
-#include "TokenKinds.h"
+
+namespace llvm {
+    template <typename T> struct DenseMapInfo;
+}
 
 namespace CPToyC {
     namespace Compiler {
+        class IdentifierInfo;
+        class IdentifierTable;
+        class SourceLocation;
+
+        /// IdentifierLocPair - A simple pair of identifier info and location.
+        typedef std::pair<IdentifierInfo*, SourceLocation> IdentifierLocPair;
+
         class IdentifierInfo {
             unsigned TokenID            : 8;        // tok::identifier
             bool HasMacro               : 1;        // True if there is a #define for this.
             bool NeedsHandleIdentifier  : 1;        // See "RecomputeNeedsHandleIdentifier".
             void *FETokenInfo;                      // language front-end
 
-            std::unordered_map<std::string, IdentifierInfo *>::iterator Entry;
-            std::unordered_map<std::string, IdentifierInfo *>::iterator End;
+            llvm::StringMapEntry<IdentifierInfo*> *Entry;
 
             IdentifierInfo(const IdentifierInfo&) = delete;  // NONCOPYABLE.
             void operator=(const IdentifierInfo&) = delete;  // NONASSIGNABLE.
@@ -46,7 +59,7 @@ namespace CPToyC {
             /// string is properly null terminated.
             ///
             const char *getName() const {
-                if (Entry != End) return Entry->first.c_str();
+                if (Entry) return Entry->getKeyData();
                 // FIXME: This is gross. It would be best not to embed specific details
                 // of the PTH file format here.
                 // The 'this' pointer really points to a
@@ -58,7 +71,7 @@ namespace CPToyC {
             /// getLength - Efficiently return the length of this identifier info.
             ///
             unsigned getLength() const {
-                if (Entry != End) return Entry->first.size();
+                if (Entry) return Entry->getKeyLength();
                 // FIXME: This is gross. It would be best not to embed specific details
                 // of the PTH file format here.
                 // The 'this' pointer really points to a
@@ -150,9 +163,11 @@ namespace CPToyC {
         };
 
         class IdentifierTable {
-            std::unordered_map<std::string, IdentifierInfo *> HashTable;
+            typedef llvm::StringMap<IdentifierInfo*, llvm::BumpPtrAllocator> HashTableTy;
+            HashTableTy HashTable;
 
             IdentifierInfoLookup* ExternalLookup;
+
         public:
             IdentifierTable(IdentifierInfoLookup *externalLookup = nullptr);
 
@@ -161,41 +176,37 @@ namespace CPToyC {
                 ExternalLookup = IILookup;
             }
 
+            llvm::BumpPtrAllocator& getAllocator() {
+                return HashTable.getAllocator();
+            }
+
             /// get - Return the identifier token info for the specified named identifier.
             ///
             IdentifierInfo &get(const char *NameStart, const char *NameEnd) {
+                llvm::StringMapEntry<IdentifierInfo*> &Entry =
+                        HashTable.GetOrCreateValue(NameStart, NameEnd);
 
-                std::string name(NameStart, NameEnd);
-
-                IdentifierInfo *II;
-                if (HashTable.find(name) != HashTable.end()) {
-                    II = HashTable[name];
-                    return *II;
-                }
+                IdentifierInfo *II = Entry.getValue();
+                if (II) return *II;
 
                 // No entry; if we have an external lookup, look there first.
                 if (ExternalLookup) {
                     II = ExternalLookup->get(NameStart, NameEnd);
                     if (II) {
                         // Cache in the StringMap for subsequent lookups.
-                        HashTable[name] = II;
+                        Entry.setValue(II);
                         return *II;
                     }
                 }
 
-                std::pair<std::string, IdentifierInfo *> entry;
-                entry.first = name;
-
                 // Lookups failed, make a new IdentifierInfo.
-                II = new IdentifierInfo();
-                entry.second = II;
-
-                HashTable.insert(entry);
+                void *Mem = getAllocator().Allocate<IdentifierInfo>();
+                II = new (Mem) IdentifierInfo();
+                Entry.setValue(II);
 
                 // Make sure getName() knows how to find the IdentifierInfo
                 // contents.
-                II->Entry = HashTable.find(name);
-                II->End = HashTable.end();
+                II->Entry = &Entry;
 
                 return *II;
             }
@@ -210,22 +221,20 @@ namespace CPToyC {
             /// identifiers.
             IdentifierInfo &CreateIdentifierInfo(const char *NameStart,
                                                  const char *NameEnd) {
-                std::string name(NameStart, NameEnd);
+                llvm::StringMapEntry<IdentifierInfo*> &Entry =
+                        HashTable.GetOrCreateValue(NameStart, NameEnd);
 
-                IdentifierInfo *II;
-                if (HashTable.find(name) != HashTable.end()) {
-                    II = HashTable[name];
-                    return *II;
-                }
+                IdentifierInfo *II = Entry.getValue();
+                assert(!II && "IdentifierInfo already exists");
 
                 // Lookups failed, make a new IdentifierInfo.
-                II = new IdentifierInfo();
-                HashTable[name] = II;
+                void *Mem = getAllocator().Allocate<IdentifierInfo>();
+                II = new (Mem) IdentifierInfo();
+                Entry.setValue(II);
 
                 // Make sure getName() knows how to find the IdentifierInfo
                 // contents.
-                II->Entry = HashTable.find(name);
-                II->End = HashTable.end();
+                II->Entry = &Entry;
 
                 return *II;
             }
@@ -239,8 +248,16 @@ namespace CPToyC {
                 return get(NameBytes, NameBytes+Name.size());
             }
 
+            typedef HashTableTy::const_iterator iterator;
+            typedef HashTableTy::const_iterator const_iterator;
 
+            iterator begin() const { return HashTable.begin(); }
+            iterator end() const   { return HashTable.end(); }
             unsigned size() const { return HashTable.size(); }
+
+            /// PrintStats - Print some statistics to stderr that indicate how well the
+            /// hashing is doing.
+            void PrintStats() const;
 
             /// PrintStats - Print some statistics to stderr that indicate how well the
             /// hashing is doing.

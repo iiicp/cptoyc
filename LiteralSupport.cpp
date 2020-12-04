@@ -10,6 +10,8 @@
 
 #include "LiteralSupport.h"
 #include "Preprocessor.h"
+#include "llvm/StringRef.h"
+#include "llvm/StringExtras.h"
 
 using namespace CPToyC::Compiler;
 
@@ -90,8 +92,8 @@ static unsigned ProcessCharEscape(const char *&ThisTokBuf,
 
             // See if any bits will be truncated when evaluated as a character.
             unsigned CharWidth = IsWide
-                                 ? 2
-                                 : 1;
+                                 ? (sizeof(wchar_t) * 8)
+                                 : (sizeof(char) * 8);
 
             if (CharWidth != 32 && (ResultChar >> CharWidth) != 0) {
                 Overflow = true;
@@ -121,11 +123,11 @@ static unsigned ProcessCharEscape(const char *&ThisTokBuf,
 
             // Check for overflow.  Reject '\777', but not L'\777'.
             unsigned CharWidth = IsWide
-                                 ? 2
-                                 : 1;
+                                 ? (sizeof(wchar_t) * 8)
+                                 : (sizeof(char) * 8);
 
             if (CharWidth != 32 && (ResultChar >> CharWidth) != 0) {
-//                PP.Diag(Loc, diag::warn_octal_escape_too_large);
+                std::cerr << "PP.Diag(Loc, diag::warn_octal_escape_too_large);" << std::endl;
                 ResultChar &= ~0U >> (32-CharWidth);
             }
             break;
@@ -134,8 +136,8 @@ static unsigned ProcessCharEscape(const char *&ThisTokBuf,
             // Otherwise, these are not valid escapes.
         case '(': case '{': case '[': case '%':
             // GCC accepts these as extensions.  We warn about them as such though.
-//            PP.Diag(Loc, diag::ext_nonstandard_escape)
-//                    << std::string()+(char)ResultChar;
+            std::cerr << "PP.Diag(Loc, diag::ext_nonstandard_escape), ";
+            std::cerr << "std::string()+(char)ResultChar\n";
             break;
         default:
             std::cerr << "PP.Diag(Loc, diag::ext_unknown_escape) << x+llvm::utohexstr(ResultChar);"<<std::endl;
@@ -300,8 +302,8 @@ NumericLiteralParser(const char *begin, const char *end,
         if (s == ThisTokEnd) {
             // Done.
         } else if (isxdigit(*s) && !(*s == 'e' || *s == 'E')) {
-//            PP.Diag(PP.AdvanceToTokenCharacter(TokLoc, s-begin),
-//                    diag::err_invalid_decimal_digit) << std::string(s, s+1);
+            std::cerr << "PP.Diag(PP.AdvanceToTokenCharacter(TokLoc, s-begin),";
+            std::cerr << "diag::err_invalid_decimal_digit) << std::string(s, s+1);\n";
             hadError = true;
             return;
         } else if (*s == '.') {
@@ -318,8 +320,8 @@ NumericLiteralParser(const char *begin, const char *end,
             if (first_non_digit != s) {
                 s = first_non_digit;
             } else {
-//                PP.Diag(PP.AdvanceToTokenCharacter(TokLoc, Exponent-begin),
-//                        diag::err_exponent_has_no_digits);
+                std::cerr << "PP.Diag(PP.AdvanceToTokenCharacter(TokLoc, Exponent-begin),";
+                std::cerr << "diag::err_exponent_has_no_digits);\n";
                 hadError = true;
                 return;
             }
@@ -363,41 +365,41 @@ NumericLiteralParser(const char *begin, const char *end,
                 }
                 continue;  // Success.
             case 'i':
-//                if (PP.getLangOptions().Microsoft) {
-//                    // Allow i8, i16, i32, i64, and i128.
-//                    if (++s == ThisTokEnd) break;
-//                    switch (*s) {
-//                        case '8':
-//                            s++; // i8 suffix
-//                            break;
-//                        case '1':
-//                            if (++s == ThisTokEnd) break;
-//                            if (*s == '6') s++; // i16 suffix
-//                            else if (*s == '2') {
-//                                if (++s == ThisTokEnd) break;
-//                                if (*s == '8') s++; // i128 suffix
-//                            }
-//                            break;
-//                        case '3':
-//                            if (++s == ThisTokEnd) break;
-//                            if (*s == '2') s++; // i32 suffix
-//                            break;
-//                        case '6':
-//                            if (++s == ThisTokEnd) break;
-//                            if (*s == '4') s++; // i64 suffix
-//                            break;
-//                        default:
-//                            break;
-//                    }
-//                    break;
-//                }
+                if (false/*PP.getLangOptions().Microsoft*/) {
+                    // Allow i8, i16, i32, i64, and i128.
+                    if (++s == ThisTokEnd) break;
+                    switch (*s) {
+                        case '8':
+                            s++; // i8 suffix
+                            break;
+                        case '1':
+                            if (++s == ThisTokEnd) break;
+                            if (*s == '6') s++; // i16 suffix
+                            else if (*s == '2') {
+                                if (++s == ThisTokEnd) break;
+                                if (*s == '8') s++; // i128 suffix
+                            }
+                            break;
+                        case '3':
+                            if (++s == ThisTokEnd) break;
+                            if (*s == '2') s++; // i32 suffix
+                            break;
+                        case '6':
+                            if (++s == ThisTokEnd) break;
+                            if (*s == '4') s++; // i64 suffix
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                }
                 // fall through.
             case 'I':
             case 'j':
             case 'J':
                 if (isImaginary) break;   // Cannot be repeated.
-//                PP.Diag(PP.AdvanceToTokenCharacter(TokLoc, s-begin),
-//                        diag::ext_imaginary_constant);
+                std::cerr << "PP.Diag(PP.AdvanceToTokenCharacter(TokLoc, s-begin),";
+                std::cerr <<  "diag::ext_imaginary_constant);\n";
                 isImaginary = true;
                 continue;  // Success.
         }
@@ -411,6 +413,7 @@ NumericLiteralParser(const char *begin, const char *end,
 //                isFPConstant ? diag::err_invalid_suffix_float_constant :
 //                diag::err_invalid_suffix_integer_constant)
 //                << std::string(SuffixBegin, ThisTokEnd);
+        std::cerr << "Report an error if there are any" << std::endl;
         hadError = true;
         return;
     }
@@ -539,87 +542,87 @@ void NumericLiteralParser::ParseNumberStartingWithZero(SourceLocation TokLoc) {
 /// GetIntegerValue - Convert this numeric literal value to an APInt that
 /// matches Val's input width.  If there is an overflow, set Val to the low bits
 /// of the result and return true.  Otherwise, return false.
-//bool NumericLiteralParser::GetIntegerValue(llvm::APInt &Val) {
-//    // Fast path: Compute a conservative bound on the maximum number of
-//    // bits per digit in this radix. If we can't possibly overflow a
-//    // uint64 based on that bound then do the simple conversion to
-//    // integer. This avoids the expensive overflow checking below, and
-//    // handles the common cases that matter (small decimal integers and
-//    // hex/octal values which don't overflow).
-//    unsigned MaxBitsPerDigit = 1;
-//    while ((1U << MaxBitsPerDigit) < radix)
-//        MaxBitsPerDigit += 1;
-//    if ((SuffixBegin - DigitsBegin) * MaxBitsPerDigit <= 64) {
-//        uint64_t N = 0;
-//        for (s = DigitsBegin; s != SuffixBegin; ++s)
-//            N = N*radix + HexDigitValue(*s);
-//
-//        // This will truncate the value to Val's input width. Simply check
-//        // for overflow by comparing.
-//        Val = N;
-//        return Val.getZExtValue() != N;
-//    }
-//
-//    Val = 0;
-//    s = DigitsBegin;
-//
-//    llvm::APInt RadixVal(Val.getBitWidth(), radix);
-//    llvm::APInt CharVal(Val.getBitWidth(), 0);
-//    llvm::APInt OldVal = Val;
-//
-//    bool OverflowOccurred = false;
-//    while (s < SuffixBegin) {
-//        unsigned C = HexDigitValue(*s++);
-//
-//        // If this letter is out of bound for this radix, reject it.
-//        assert(C < radix && "NumericLiteralParser ctor should have rejected this");
-//
-//        CharVal = C;
-//
-//        // Add the digit to the value in the appropriate radix.  If adding in digits
-//        // made the value smaller, then this overflowed.
-//        OldVal = Val;
-//
-//        // Multiply by radix, did overflow occur on the multiply?
-//        Val *= RadixVal;
-//        OverflowOccurred |= Val.udiv(RadixVal) != OldVal;
-//
-//        // Add value, did overflow occur on the value?
-//        //   (a + b) ult b  <=> overflow
-//        Val += CharVal;
-//        OverflowOccurred |= Val.ult(CharVal);
-//    }
-//    return OverflowOccurred;
-//}
+bool NumericLiteralParser::GetIntegerValue(llvm::APInt &Val) {
+    // Fast path: Compute a conservative bound on the maximum number of
+    // bits per digit in this radix. If we can't possibly overflow a
+    // uint64 based on that bound then do the simple conversion to
+    // integer. This avoids the expensive overflow checking below, and
+    // handles the common cases that matter (small decimal integers and
+    // hex/octal values which don't overflow).
+    unsigned MaxBitsPerDigit = 1;
+    while ((1U << MaxBitsPerDigit) < radix)
+        MaxBitsPerDigit += 1;
+    if ((SuffixBegin - DigitsBegin) * MaxBitsPerDigit <= 64) {
+        uint64_t N = 0;
+        for (s = DigitsBegin; s != SuffixBegin; ++s)
+            N = N*radix + HexDigitValue(*s);
 
-//llvm::APFloat NumericLiteralParser::
-//GetFloatValue(const llvm::fltSemantics &Format, bool* isExact) {
-//    using llvm::APFloat;
-//    using llvm::StringRef;
-//
-//    llvm::SmallVector<char,256> floatChars;
-//    unsigned n = std::min(SuffixBegin - ThisTokBegin, ThisTokEnd - ThisTokBegin);
-//    for (unsigned i = 0; i != n; ++i)
-//        floatChars.push_back(ThisTokBegin[i]);
-//
-//    floatChars.push_back('\0');
-//
-//    APFloat V (Format, APFloat::fcZero, false);
-//    APFloat::opStatus status;
-//
-//    status = V.convertFromString(StringRef(&floatChars[0], n),
-//                                 APFloat::rmNearestTiesToEven);
-//
-//    if (isExact)
-//        *isExact = status == APFloat::opOK;
-//
-//    return V;
-//}
+        // This will truncate the value to Val's input width. Simply check
+        // for overflow by comparing.
+        Val = N;
+        return Val.getZExtValue() != N;
+    }
+
+    Val = 0;
+    s = DigitsBegin;
+
+    llvm::APInt RadixVal(Val.getBitWidth(), radix);
+    llvm::APInt CharVal(Val.getBitWidth(), 0);
+    llvm::APInt OldVal = Val;
+
+    bool OverflowOccurred = false;
+    while (s < SuffixBegin) {
+        unsigned C = HexDigitValue(*s++);
+
+        // If this letter is out of bound for this radix, reject it.
+        assert(C < radix && "NumericLiteralParser ctor should have rejected this");
+
+        CharVal = C;
+
+        // Add the digit to the value in the appropriate radix.  If adding in digits
+        // made the value smaller, then this overflowed.
+        OldVal = Val;
+
+        // Multiply by radix, did overflow occur on the multiply?
+        Val *= RadixVal;
+        OverflowOccurred |= Val.udiv(RadixVal) != OldVal;
+
+        // Add value, did overflow occur on the value?
+        //   (a + b) ult b  <=> overflow
+        Val += CharVal;
+        OverflowOccurred |= Val.ult(CharVal);
+    }
+    return OverflowOccurred;
+}
+
+llvm::APFloat NumericLiteralParser::
+GetFloatValue(const llvm::fltSemantics &Format, bool* isExact) {
+    using llvm::APFloat;
+    using llvm::StringRef;
+
+    llvm::SmallVector<char,256> floatChars;
+    unsigned n = std::min(SuffixBegin - ThisTokBegin, ThisTokEnd - ThisTokBegin);
+    for (unsigned i = 0; i != n; ++i)
+        floatChars.push_back(ThisTokBegin[i]);
+
+    floatChars.push_back('\0');
+
+    APFloat V (Format, APFloat::fcZero, false);
+    APFloat::opStatus status;
+
+    status = V.convertFromString(StringRef(&floatChars[0], n),
+                                 APFloat::rmNearestTiesToEven);
+
+    if (isExact)
+        *isExact = status == APFloat::opOK;
+
+    return V;
+}
 
 
 CharLiteralParser::CharLiteralParser(const char *begin, const char *end,
                                      SourceLocation Loc, Preprocessor &PP) {
-#if 0
+#if 1
     // At this point we know that the character matches the regex "L?'.*'".
     HadError = false;
 
@@ -634,16 +637,16 @@ CharLiteralParser::CharLiteralParser(const char *begin, const char *end,
     // FIXME: The "Value" is an uint64_t so we can handle char literals of
     // upto 64-bits.
     // FIXME: This extensively assumes that 'char' is 8-bits.
-    assert(PP.getTargetInfo().getCharWidth() == 8 &&
-           "Assumes char is 8 bits");
-    assert(PP.getTargetInfo().getIntWidth() <= 64 &&
-           (PP.getTargetInfo().getIntWidth() & 7) == 0 &&
-           "Assumes sizeof(int) on target is <= 64 and a multiple of char");
-    assert(PP.getTargetInfo().getWCharWidth() <= 64 &&
-           "Assumes sizeof(wchar) on target is <= 64");
+//    assert(PP.getTargetInfo().getCharWidth() == 8 &&
+//           "Assumes char is 8 bits");
+//    assert(PP.getTargetInfo().getIntWidth() <= 64 &&
+//           (PP.getTargetInfo().getIntWidth() & 7) == 0 &&
+//           "Assumes sizeof(int) on target is <= 64 and a multiple of char");
+//    assert(PP.getTargetInfo().getWCharWidth() <= 64 &&
+//           "Assumes sizeof(wchar) on target is <= 64");
 
     // This is what we will use for overflow detection
-    llvm::APInt LitVal(PP.getTargetInfo().getIntWidth(), 0);
+    llvm::APInt LitVal(sizeof(int), 0);
 
     unsigned NumCharsSoFar = 0;
     while (begin[0] != '\'') {
@@ -663,7 +666,7 @@ CharLiteralParser::CharLiteralParser(const char *begin, const char *end,
                 // Narrow character literals act as though their value is concatenated
                 // in this implementation, but warn on overflow.
                 if (LitVal.countLeadingZeros() < 8)
-                    PP.Diag(Loc, diag::warn_char_constant_too_large);
+                    std::cerr << "PP.Diag(Loc, diag::warn_char_constant_too_large);" << std::endl;
                 LitVal <<= 8;
             }
         }
@@ -677,11 +680,11 @@ CharLiteralParser::CharLiteralParser(const char *begin, const char *end,
         // Warn about discarding the top bits for multi-char wide-character
         // constants (L'abcd').
         if (IsWide)
-            PP.Diag(Loc, diag::warn_extraneous_wide_char_constant);
+            std::cerr << "PP.Diag(Loc, diag::warn_extraneous_wide_char_constant);\n";
         else if (NumCharsSoFar != 4)
-            PP.Diag(Loc, diag::ext_multichar_character_literal);
+            std::cerr << "PP.Diag(Loc, diag::ext_multichar_character_literal);\n";
         else
-            PP.Diag(Loc, diag::ext_four_char_character_literal);
+            std::cerr << "PP.Diag(Loc, diag::ext_four_char_character_literal);\n";
         IsMultiChar = true;
     } else
         IsMultiChar = false;
@@ -693,8 +696,7 @@ CharLiteralParser::CharLiteralParser(const char *begin, const char *end,
     // if 'char' is signed for this target (C99 6.4.4.4p10).  Note that multiple
     // character constants are not sign extended in the this implementation:
     // '\xFF\xFF' = 65536 and '\x0\xFF' = 255, which matches GCC.
-    if (!IsWide && NumCharsSoFar == 1 && (Value & 128) &&
-        PP.getLangOptions().CharIsSigned)
+    if (!IsWide && NumCharsSoFar == 1 && (Value & 128))
         Value = (signed char)Value;
 #endif
 }

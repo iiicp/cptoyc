@@ -16,8 +16,10 @@
 #include <vector>
 #include <cassert>
 #include "MemoryBuffer.h"
+#include "llvm/DenseMap.h"
+#include "llvm/Allocator.h"
+#include "llvm/StringMap.h"
 #include <map>
-#include <unordered_map>
 
 namespace CPToyC {
     namespace Compiler {
@@ -307,9 +309,8 @@ namespace CPToyC {
             /// frequently reoccur and reference them with indices.  FilenameIDs holds
             /// the mapping from string -> ID, and FilenamesByID holds the mapping of ID
             /// to string.
-            std::unordered_map<std::string, unsigned> FilenameIDs;
-
-            std::vector<std::string> FilenamesByID;
+            llvm::StringMap<unsigned, llvm::BumpPtrAllocator> FilenameIDs;
+            std::vector<llvm::StringMapEntry<unsigned>*> FilenamesByID;
 
             /// LineEntries - This is a map from FileIDs to a list of line entries (sorted
             /// by the offset they occur in the file.
@@ -329,7 +330,7 @@ namespace CPToyC {
             unsigned getLineTableFilenameID(const char *Ptr, unsigned Len);
             const char *getFilename(unsigned ID) const {
                 assert(ID < FilenamesByID.size() && "Invalid FilenameID");
-                return FilenamesByID[ID].c_str();
+                return FilenamesByID[ID]->getKeyData();
             }
             unsigned getNumFilenames() const { return FilenamesByID.size(); }
 
@@ -365,12 +366,12 @@ namespace CPToyC {
         /// location indicates where the expanded token came from and the instantiation
         /// location specifies where it was expanded.
         class SourceManager {
-
+            mutable llvm::BumpPtrAllocator ContentCacheAlloc;
             /// FileInfos - Memoized information about all of the files tracked by this
             /// SourceManager.  This set allows us to merge ContentCache entries based
             /// on their FileEntry*.  All ContentCache objects will thus have unique,
             /// non-null, FileEntry pointers.
-            std::map<const FileEntry*, ContentCache *> FileInfos;
+            llvm::DenseMap<const FileEntry*, ContentCache*> FileInfos;
 
             /// MemBufferInfos - Information about various memory buffers that we have
             /// read in.  All FileEntry* within the stored ContentCache objects are NULL,
@@ -461,7 +462,7 @@ namespace CPToyC {
                                 unsigned PreallocatedID = 0,
                                 unsigned Offset = 0) {
                 const ContentCache *IR = getOrCreateContentCache(SourceFile);
-                if (IR == 0) return FileID();    // Error opening file?
+                if (IR == nullptr) return FileID();    // Error opening file?
                 return createFileID(IR, IncludePos, FileCharacter, PreallocatedID, Offset);
             }
 
@@ -736,7 +737,8 @@ namespace CPToyC {
             bool isBeforeInTranslationUnit(SourceLocation LHS, SourceLocation RHS) const;
 
             // Iterators over FileInfos.
-            typedef std::map<const FileEntry*, ContentCache*>::const_iterator fileinfo_iterator;
+            typedef llvm::DenseMap<const FileEntry*, ContentCache*>
+            ::const_iterator fileinfo_iterator;
             fileinfo_iterator fileinfo_begin() const { return FileInfos.begin(); }
             fileinfo_iterator fileinfo_end() const { return FileInfos.end(); }
 

@@ -18,6 +18,10 @@
 #include "MacroArgs.h"
 #include "ScratchBuffer.h"
 #include "IdentifierTable.h"
+#include "llvm/DenseMap.h"
+#include "llvm/OwningPtr.h"
+#include "llvm/Allocator.h"
+#include <vector>
 
 namespace CPToyC {
     namespace Compiler {
@@ -31,6 +35,10 @@ namespace CPToyC {
             SourceManager       &SourceMgr;
             ScratchBuffer       *ScratchBuf;
             HeaderSearch        &HeaderInfo;
+
+            /// BP - A BumpPtrAllocator object used to quickly allocate and release
+            ///  objects internal to the Preprocessor.
+            llvm::BumpPtrAllocator BP;
 
             unsigned CounterValue;  // Next __COUNTER__ value.
 
@@ -58,7 +66,7 @@ namespace CPToyC {
             /// CurLexer - This is the current top of the stack that we're lexing from if
             /// not expanding a macro and we are lexing directly from source code.
             ///  Only one of CurLexer, CurPTHLexer, or CurTokenLexer will be non-null.
-            std::unique_ptr<Lexer> CurLexer;
+            llvm::OwningPtr<Lexer> CurLexer;
 
             /// CurPPLexer - This is the current top of the stack what we're lexing from
             ///  if not expanding a macro.  This is an alias for either CurLexer or
@@ -72,7 +80,7 @@ namespace CPToyC {
 
             /// CurTokenLexer - This is the current macro we are expanding, if we are
             /// expanding a macro.  One of CurLexer and CurTokenLexer must be null.
-            std::unique_ptr<TokenLexer> CurTokenLexer;
+            llvm::OwningPtr<TokenLexer> CurTokenLexer;
 
             /// IncludeMacroStack - This keeps track of the stack of files currently
             /// #included, and macros currently being expanded from, not counting
@@ -91,8 +99,7 @@ namespace CPToyC {
 
             /// Macros - For each IdentifierInfo with 'HasMacro' set, we keep a mapping
             /// to the actual definition of the macro.
-//            llvm::DenseMap<IdentifierInfo*, MacroInfo*> Macros;
-            std::map<IdentifierInfo*, MacroInfo *>Macros;
+            llvm::DenseMap<IdentifierInfo*, MacroInfo*> Macros;
 
             /// MICache - A "freelist" of MacroInfo objects that can be reused for quick
             ///  allocation.
@@ -170,7 +177,7 @@ namespace CPToyC {
 
             /// macro_iterator/macro_begin/macro_end - This allows you to walk the current
             /// state of the macro table.  This visits every currently-defined macro.
-            typedef std::map<IdentifierInfo*,
+            typedef llvm::DenseMap<IdentifierInfo*,
                     MacroInfo*>::const_iterator macro_iterator;
             macro_iterator macro_begin() const { return Macros.begin(); }
             macro_iterator macro_end() const { return Macros.end(); }
@@ -489,9 +496,9 @@ namespace CPToyC {
 
         private:
             void PushIncludeMacroStack() {
-                IncludeMacroStack.push_back(IncludeStackInfo(CurLexer.get(),
+                IncludeMacroStack.push_back(IncludeStackInfo(CurLexer.take(),
                                                              CurPPLexer,
-                                                             CurTokenLexer.get(),
+                                                             CurTokenLexer.take(),
                                                              CurDirLookup));
                 CurPPLexer = 0;
             }

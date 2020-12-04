@@ -11,8 +11,9 @@
 #ifndef CPTOYC_HEADERSEARCH_H
 #define CPTOYC_HEADERSEARCH_H
 #include "DirectoryLookup.h"
-#include "FileManager.h"
+#include "llvm/StringMap.h"
 #include <vector>
+#include "FileManager.h"
 
 namespace CPToyC {
     namespace Compiler {
@@ -90,14 +91,12 @@ namespace CPToyC {
             /// and this value doesn't match the current query, the cache has to be
             /// ignored.  The second value is the entry in SearchDirs that satisfied the
             /// query.
-            //llvm::StringMap<std::pair<unsigned, unsigned> > LookupFileCache;
-            std::unordered_map<std::string, std::pair<unsigned, unsigned >> LookupFileCache;
+            llvm::StringMap<std::pair<unsigned, unsigned> > LookupFileCache;
 
 
             /// FrameworkMap - This is a collection mapping a framework or subframework
             /// name like "Carbon" to the Carbon.framework directory.
-            //llvm::StringMap<const DirectoryEntry *> FrameworkMap;
-            std::unordered_map<std::string, const DirectoryEntry *> FrameworkMap;
+            llvm::StringMap<const DirectoryEntry *> FrameworkMap;
 
             /// HeaderMaps - This is a mapping from FileEntry -> HeaderMap, uniquing
             /// headermaps.  This vector owns the headermap.

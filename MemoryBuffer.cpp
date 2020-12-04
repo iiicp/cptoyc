@@ -9,9 +9,12 @@
 ***********************************/
 
 #include "MemoryBuffer.h"
+#include "llvm/OwningPtr.h"
+#include "llvm/SmallString.h"
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
+#include <cerrno>
 #include <unistd.h>
 #include <sys/uio.h>
 #include <sys/stat.h>
@@ -168,7 +171,7 @@ MemoryBuffer *MemoryBuffer::getFile(const char *Filename, std::string *ErrStr, i
         return 0;
     }
 
-//    std::unique_ptr<MemoryBuffer> SB(Buf);
+    llvm::OwningPtr<MemoryBuffer> SB(Buf);
     char *BufPtr = const_cast<char *>(Buf->getBufferStart());
 
     size_t BytesLeft = FileSize;

@@ -9,11 +9,15 @@
 ***********************************/
 
 #include "HeaderMap.h"
+#include "FileManager.h"
+#include "llvm/OwningPtr.h"
+#include "llvm/SmallString.h"
 #include <cstdint>
-#include <cstring>
 #include <memory>
 #include "MathExtras.h"
-#include "FileManager.h"
+#include "MemoryBuffer.h"
+#include <cstdio>
+
 using namespace CPToyC::Compiler;
 
 //===----------------------------------------------------------------------===//
@@ -51,7 +55,7 @@ const HeaderMap *HeaderMap::Create(const FileEntry *FE) {
     unsigned FileSize = FE->getSize();
     if (FileSize <= sizeof(HMapHeader)) return 0;
 
-    std::unique_ptr<const MemoryBuffer> FileBuffer(
+    llvm::OwningPtr<const MemoryBuffer> FileBuffer(
             MemoryBuffer::getFile(FE->getName(), 0, FE->getSize()));
     if (FileBuffer == 0) return 0;  // Unreadable file?
     const char *FileStart = FileBuffer->getBufferStart();
@@ -209,11 +213,9 @@ const FileEntry *HeaderMap::LookupFile(const char *FilenameStart,
 
         // If so, we have a match in the hash table.  Construct the destination
         // path.
-//        llvm::SmallString<1024> DestPath;
-        std::string DestPath;
-        DestPath.reserve(1024);
+        llvm::SmallString<1024> DestPath;
         DestPath += getString(B.Prefix);
         DestPath += getString(B.Suffix);
-        return FM.getFile(DestPath.c_str(), DestPath.c_str() + DestPath.size());
+        return FM.getFile(DestPath.begin(), DestPath.end());
     }
 }

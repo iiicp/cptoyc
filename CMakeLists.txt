@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.14.1)
 project(cptoyc)
 set(CMAKE_CXX_STANDARD 17)
+aux_source_directory(llvm LLVMADT)
 add_executable(cptoyc
         lexer.h
         lexer.cpp
@@ -41,4 +42,5 @@ add_executable(cptoyc
         LiteralSupport.cpp
         LiteralSupport.h
         PPCaching.cpp
-        PPExpressions.cpp)
+        PPExpressions.cpp
+        ${LLVMADT})

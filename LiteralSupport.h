@@ -11,7 +11,14 @@
 #ifndef CPTOYC_LITERALSUPPORT_H
 #define CPTOYC_LITERALSUPPORT_H
 #include <string>
-#include <cstdint>
+#include "llvm/SmallString.h"
+
+namespace llvm {
+    class APInt;
+    class APFloat;
+    class fltSemantics;
+}
+
 namespace CPToyC {
     namespace Compiler {
         class Preprocessor;
@@ -59,15 +66,15 @@ namespace CPToyC {
             /// matches Val's input width.  If there is an overflow (i.e., if the unsigned
             /// value read is larger than the APInt's bits will hold), set Val to the low
             /// bits of the result and return true.  Otherwise, return false.
-//            bool GetIntegerValue(llvm::APInt &Val);
+            bool GetIntegerValue(llvm::APInt &Val);
 
             /// GetFloatValue - Convert this numeric literal to a floating value, using
             /// the specified APFloat fltSemantics (specifying float, double, etc).
             /// The optional bool isExact (passed-by-reference) has its value
             /// set to true if the returned APFloat can represent the number in the
             /// literal exactly, and false otherwise.
-//            llvm::APFloat GetFloatValue(const llvm::fltSemantics &Format,
-//                                        bool* isExact = NULL);
+            llvm::APFloat GetFloatValue(const llvm::fltSemantics &Format,
+                                        bool* isExact = NULL);
 
         private:
 

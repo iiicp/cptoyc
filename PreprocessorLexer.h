@@ -12,7 +12,7 @@
 #define CPTOYC_PREPROCESSORLEXER_H
 #include "token.h"
 #include "MultipleIncludeOpt.h"
-#include <vector>
+#include "llvm/SmallVector.h"
 
 namespace CPToyC {
     namespace Compiler {
@@ -52,7 +52,7 @@ namespace CPToyC {
             /// idiom for the multiple-include optimization.
             MultipleIncludeOpt MIOpt;
 
-            std::vector<PPConditionalInfo> ConditionalStack;
+            llvm::SmallVector<PPConditionalInfo, 4> ConditionalStack;
 
             PreprocessorLexer(const PreprocessorLexer&);          // DO NOT IMPLEMENT
             void operator=(const PreprocessorLexer&); // DO NOT IMPLEMENT

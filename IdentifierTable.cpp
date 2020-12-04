@@ -9,6 +9,9 @@
 ***********************************/
 
 #include "IdentifierTable.h"
+#include "llvm/FoldingSet.h"
+#include "llvm/DenseMap.h"
+#include <cstdio>
 
 using namespace CPToyC::Compiler;
 
@@ -21,7 +24,7 @@ IdentifierInfo::IdentifierInfo() {
     HasMacro = false;
     NeedsHandleIdentifier = false;
     FETokenInfo = nullptr;
-    Entry = End;
+    Entry = nullptr;
 }
 //===----------------------------------------------------------------------===//
 // IdentifierTable Implementation
@@ -137,4 +140,39 @@ tok::PPKeywordKind IdentifierInfo::getPPKeywordID() const {
 #undef CASE
 #undef HASH
     }
+}
+
+//===----------------------------------------------------------------------===//
+// Stats Implementation
+//===----------------------------------------------------------------------===//
+
+/// PrintStats - Print statistics about how well the identifier table is doing
+/// at hashing identifiers.
+void IdentifierTable::PrintStats() const {
+    unsigned NumBuckets = HashTable.getNumBuckets();
+    unsigned NumIdentifiers = HashTable.getNumItems();
+    unsigned NumEmptyBuckets = NumBuckets-NumIdentifiers;
+    unsigned AverageIdentifierSize = 0;
+    unsigned MaxIdentifierLength = 0;
+
+    // TODO: Figure out maximum times an identifier had to probe for -stats.
+    for (llvm::StringMap<IdentifierInfo*, llvm::BumpPtrAllocator>::const_iterator
+                 I = HashTable.begin(), E = HashTable.end(); I != E; ++I) {
+        unsigned IdLen = I->getKeyLength();
+        AverageIdentifierSize += IdLen;
+        if (MaxIdentifierLength < IdLen)
+            MaxIdentifierLength = IdLen;
+    }
+
+    fprintf(stderr, "\n*** Identifier Table Stats:\n");
+    fprintf(stderr, "# Identifiers:   %d\n", NumIdentifiers);
+    fprintf(stderr, "# Empty Buckets: %d\n", NumEmptyBuckets);
+    fprintf(stderr, "Hash density (#identifiers per bucket): %f\n",
+            NumIdentifiers/(double)NumBuckets);
+    fprintf(stderr, "Ave identifier length: %f\n",
+            (AverageIdentifierSize/(double)NumIdentifiers));
+    fprintf(stderr, "Max identifier length: %d\n", MaxIdentifierLength);
+
+    // Compute statistics about the memory allocated for identifiers.
+    HashTable.getAllocator().PrintStats();
 }

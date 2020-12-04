@@ -12,6 +12,8 @@
 #define CPTOYC_MACROINFO_H
 
 #include "token.h"
+#include "llvm/SmallVector.h"
+#include "llvm/Allocator.h"
 #include <vector>
 #include <cassert>
 
@@ -37,7 +39,7 @@ namespace CPToyC {
 
             /// ReplacementTokens - This is the list of tokens that the macro is defined
             /// to.
-            std::vector<Token> ReplacementTokens;
+            llvm::SmallVector<Token, 8> ReplacementTokens;
 
             /// IsFunctionLike - True if this macro is a function-like macro, false if it
             /// is an object-like macro.
@@ -80,18 +82,15 @@ namespace CPToyC {
 
             /// FreeArgumentList - Free the argument list of the macro, restoring it to a
             /// state where it can be reused for other devious purposes.
-            void FreeArgumentList() {
-//                PPAllocator.Deallocate(ArgumentList);
-                if (ArgumentList) {
-                    delete [] ArgumentList;
-                }
-                ArgumentList = nullptr;
+            void FreeArgumentList(llvm::BumpPtrAllocator &PPAllocator) {
+                PPAllocator.Deallocate(ArgumentList);
+                ArgumentList = 0;
                 NumArguments = 0;
             }
 
             /// Destroy - destroy this MacroInfo object.
-            void Destroy() {
-                FreeArgumentList();
+            void Destroy(llvm::BumpPtrAllocator &PPAllocator) {
+                FreeArgumentList(PPAllocator);
                 this->~MacroInfo();
             }
 
@@ -185,7 +184,7 @@ namespace CPToyC {
                 return ReplacementTokens[Tok];
             }
 
-            typedef std::vector<Token>::const_iterator tokens_iterator;
+            typedef llvm::SmallVector<Token, 8>::const_iterator tokens_iterator;
             tokens_iterator tokens_begin() const { return ReplacementTokens.begin(); }
             tokens_iterator tokens_end() const { return ReplacementTokens.end(); }
             bool tokens_empty() const { return ReplacementTokens.empty(); }

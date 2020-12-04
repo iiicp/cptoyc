@@ -13,6 +13,7 @@
 #include "MacroInfo.h"
 #include "SourceManager.h"
 #include "LiteralSupport.h"
+#include "llvm/APInt.h"
 
 using namespace CPToyC::Compiler;
 
@@ -27,7 +28,8 @@ MacroInfo *Preprocessor::AllocateMacroInfo(SourceLocation L) {
         MI = MICache.back();
         MICache.pop_back();
     } else
-        MI = new MacroInfo(L);
+        MI = (MacroInfo *) BP.Allocate<MacroInfo>();
+    new (MI) MacroInfo(L);
     return MI;
 }
 
@@ -35,7 +37,7 @@ MacroInfo *Preprocessor::AllocateMacroInfo(SourceLocation L) {
 ///  be reused for allocating new MacroInfo objects.
 void Preprocessor::ReleaseMacroInfo(MacroInfo* MI) {
     MICache.push_back(MI);
-    MI->FreeArgumentList();
+    MI->FreeArgumentList(BP);
 }
 
 
@@ -64,7 +66,7 @@ void Preprocessor::ReadMacroName(Token &MacroNameTok, char isDefineUndef) {
     }
 
     IdentifierInfo *II = MacroNameTok.getIdentifierInfo();
-    if (II == 0) {
+    if (II == nullptr) {
         std::string Spelling = getSpelling(MacroNameTok);
         const IdentifierInfo &Info = Identifiers.get(Spelling);
 #if 0
@@ -148,11 +150,6 @@ void Preprocessor::SkipExcludedConditionalBlock(SourceLocation IfTokenLoc,
     CurPPLexer->pushConditionalLevel(IfTokenLoc, /*isSkipping*/false,
                                      FoundNonSkipPortion, FoundElse);
 
-//    if (CurPTHLexer) {
-//        PTHSkipExcludedConditionalBlock();
-//        return;
-//    }
-
     // Enter raw mode to disable identifier lookup (and thus macro expansion),
     // disabling warnings, etc.
     CurPPLexer->LexingRawMode = true;
@@ -160,9 +157,6 @@ void Preprocessor::SkipExcludedConditionalBlock(SourceLocation IfTokenLoc,
     while (1) {
         if (CurLexer)
             CurLexer->Lex(Tok);
-        else
-            //todo
-//            CurPTHLexer->Lex(Tok);
 
         // If this is the end of the buffer, we have an error.
         if (Tok.is(tok::eof)) {
@@ -293,7 +287,6 @@ void Preprocessor::SkipExcludedConditionalBlock(SourceLocation IfTokenLoc,
                     DiscardUntilEndOfDirective();
                     ShouldEnter = false;
                 } else {
-#if 0
                     // Restore the value of LexingRawMode so that identifiers are
                     // looked up, etc, inside the #elif expression.
                     assert(CurPPLexer->LexingRawMode && "We have to be skipping here!");
@@ -301,7 +294,6 @@ void Preprocessor::SkipExcludedConditionalBlock(SourceLocation IfTokenLoc,
                     IdentifierInfo *IfNDefMacro = 0;
                     ShouldEnter = EvaluateDirectiveExpression(IfNDefMacro);
                     CurPPLexer->LexingRawMode = true;
-#endif
                 }
 
                 // If this is a #elif with a #else before it, report the error.
@@ -328,83 +320,6 @@ void Preprocessor::SkipExcludedConditionalBlock(SourceLocation IfTokenLoc,
 }
 
 void Preprocessor::PTHSkipExcludedConditionalBlock() {
-#if 0
-    while(1) {
-        assert(CurPTHLexer);
-        assert(CurPTHLexer->LexingRawMode == false);
-
-        // Skip to the next '#else', '#elif', or #endif.
-        if (CurPTHLexer->SkipBlock()) {
-            // We have reached an #endif.  Both the '#' and 'endif' tokens
-            // have been consumed by the PTHLexer.  Just pop off the condition level.
-            PPConditionalInfo CondInfo;
-            bool InCond = CurPTHLexer->popConditionalLevel(CondInfo);
-            InCond = InCond;  // Silence warning in no-asserts mode.
-            assert(!InCond && "Can't be skipping if not in a conditional!");
-            break;
-        }
-
-        // We have reached a '#else' or '#elif'.  Lex the next token to get
-        // the directive flavor.
-        Token Tok;
-        LexUnexpandedToken(Tok);
-
-        // We can actually look up the IdentifierInfo here since we aren't in
-        // raw mode.
-        tok::PPKeywordKind K = Tok.getIdentifierInfo()->getPPKeywordID();
-
-        if (K == tok::pp_else) {
-            // #else: Enter the else condition.  We aren't in a nested condition
-            //  since we skip those. We're always in the one matching the last
-            //  blocked we skipped.
-            PPConditionalInfo &CondInfo = CurPTHLexer->peekConditionalLevel();
-            // Note that we've seen a #else in this conditional.
-            CondInfo.FoundElse = true;
-
-            // If the #if block wasn't entered then enter the #else block now.
-            if (!CondInfo.FoundNonSkip) {
-                CondInfo.FoundNonSkip = true;
-
-                // Scan until the eom token.
-                CurPTHLexer->ParsingPreprocessorDirective = true;
-                DiscardUntilEndOfDirective();
-                CurPTHLexer->ParsingPreprocessorDirective = false;
-
-                break;
-            }
-
-            // Otherwise skip this block.
-            continue;
-        }
-
-        assert(K == tok::pp_elif);
-        PPConditionalInfo &CondInfo = CurPTHLexer->peekConditionalLevel();
-
-        // If this is a #elif with a #else before it, report the error.
-        if (CondInfo.FoundElse)
-            Diag(Tok, diag::pp_err_elif_after_else);
-
-        // If this is in a skipping block or if we're already handled this #if
-        // block, don't bother parsing the condition.  We just skip this block.
-        if (CondInfo.FoundNonSkip)
-            continue;
-
-        // Evaluate the condition of the #elif.
-        IdentifierInfo *IfNDefMacro = 0;
-        CurPTHLexer->ParsingPreprocessorDirective = true;
-        bool ShouldEnter = EvaluateDirectiveExpression(IfNDefMacro);
-        CurPTHLexer->ParsingPreprocessorDirective = false;
-
-        // If this condition is true, enter it!
-        if (ShouldEnter) {
-            CondInfo.FoundNonSkip = true;
-            break;
-        }
-
-        // Otherwise, skip this block and go to the next one.
-        continue;
-    }
-#endif
 }
 
 /// LookupFile - Given a "foo" or <foo> reference, look up the indicated file,
@@ -523,7 +438,7 @@ void Preprocessor::HandleDirective(Token &Result) {
             return HandleDigitDirective(Result);
         default:
             IdentifierInfo *II = Result.getIdentifierInfo();
-            if (II == 0) break;  // Not an identifier.
+            if (II == nullptr) break;  // Not an identifier.
 
             // Ask what the preprocessor keyword ID is.
             switch (II->getPPKeywordID()) {
@@ -607,7 +522,7 @@ void Preprocessor::HandleDirective(Token &Result) {
 #endif
 
     // If we reached here, the preprocessing token is not valid!
-    //Diag(Result, diag::err_pp_invalid_directive);
+    std::cerr << "Diag(Result, diag::err_pp_invalid_directive);" << std::endl;
 
     // Read the rest of the PP line.
     DiscardUntilEndOfDirective();
@@ -627,7 +542,7 @@ static bool GetLineValue(Token &DigitTok, unsigned &Val,
         return true;
     }
 
-    std::string IntegerBuffer;
+    llvm::SmallString<64> IntegerBuffer;
     IntegerBuffer.resize(DigitTok.getLength());
     const char *DigitTokBegin = &IntegerBuffer[0];
     unsigned ActualLength = PP.getSpelling(DigitTok, DigitTokBegin);
@@ -836,10 +751,10 @@ void Preprocessor::HandleDigitDirective(Token &DigitTok) {
         assert(!Literal.AnyWide && "Didn't allow wide strings in");
         if (Literal.hadError)
             return DiscardUntilEndOfDirective();
-        if (Literal.Pascal) {
+//        if (Literal.Pascal) {
 //            Diag(StrTok, diag::err_pp_linemarker_invalid_filename);
-            return DiscardUntilEndOfDirective();
-        }
+//            return DiscardUntilEndOfDirective();
+//        }
         FilenameID = SourceMgr.getLineTableFilenameID(Literal.GetString(),
                                                       Literal.GetStringLength());
 
@@ -989,7 +904,7 @@ bool Preprocessor::GetIncludeFilenameSpelling(SourceLocation Loc,
 /// This code concatenates and consumes tokens up to the '>' token.  It returns
 /// false if the > was found, otherwise it returns true if it finds and consumes
 /// the EOM marker.
-static bool ConcatenateIncludeName(std::vector<char> &FilenameBuffer,
+static bool ConcatenateIncludeName(llvm::SmallVector<char, 128> &FilenameBuffer,
                                    Preprocessor &PP) {
     Token CurTok;
 
@@ -1041,7 +956,7 @@ void Preprocessor::HandleIncludeDirective(Token &IncludeTok,
     CurPPLexer->LexIncludeFilename(FilenameTok);
 
     // Reserve a buffer to get the spelling.
-    std::vector<char> FilenameBuffer;
+    llvm::SmallVector<char, 128> FilenameBuffer;
     const char *FilenameStart, *FilenameEnd;
 
     switch (FilenameTok.getKind()) {
@@ -1371,8 +1286,8 @@ void Preprocessor::HandleDefineDirective(Token &DefineTok) {
             // Get the next token of the macro.
             LexUnexpandedToken(Tok);
         }
-
-    } else {
+    }
+    else {
         // Otherwise, read the body of a function-like macro.  While we are at it,
         // check C99 6.10.3.2p1: ensure that # operators are followed by macro
         // parameters in function-like macro expansions.

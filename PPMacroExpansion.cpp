@@ -105,8 +105,6 @@ bool Preprocessor::isNextPPTokenLParen() {
     unsigned Val;
     if (CurLexer)
         Val = CurLexer->isNextPPTokenLParen();
-//    else if (CurPTHLexer)
-//        Val = CurPTHLexer->isNextPPTokenLParen();
     else
         Val = CurTokenLexer->isNextTokenLParen();
 
@@ -120,8 +118,6 @@ bool Preprocessor::isNextPPTokenLParen() {
             IncludeStackInfo &Entry = IncludeMacroStack[i-1];
             if (Entry.TheLexer)
                 Val = Entry.TheLexer->isNextPPTokenLParen();
-//            else if (Entry.ThePTHLexer)
-//                Val = Entry.ThePTHLexer->isNextPPTokenLParen();
             else
                 Val = Entry.TheTokenLexer->isNextTokenLParen();
 

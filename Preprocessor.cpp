@@ -12,6 +12,11 @@
 #include "IdentifierTable.h"
 #include "HeaderSearch.h"
 #include "ScratchBuffer.h"
+#include "MacroInfo.h"
+#include "llvm/APFloat.h"
+#include "llvm/SmallVector.h"
+#include "MemoryBuffer.h"
+#include <cstdio>
 
 using namespace CPToyC::Compiler;
 
@@ -57,13 +62,13 @@ Preprocessor::~Preprocessor() {
     }
 
     // Free any macro definitions.
-    for (std::map<IdentifierInfo*, MacroInfo*>::iterator I =
+    for (llvm::DenseMap<IdentifierInfo*, MacroInfo*>::iterator I =
             Macros.begin(), E = Macros.end(); I != E; ++I) {
         // We don't need to free the MacroInfo objects directly.  These
         // will be released when the BumpPtrAllocator 'BP' object gets
         // destroyed. We still need to run the dstor, however, to free
         // memory alocated by MacroInfo.
-        I->second->Destroy();
+        I->second->Destroy(BP);
         I->first->setHasMacroDefinition(false);
     }
 
@@ -318,17 +323,17 @@ void Preprocessor::EnterMainSourceFile() {
 
     // Enter the main file source buffer.
     EnterSourceFile(MainFileID, nullptr);
-    /*
+
     // Tell the header info that the main file was entered.  If the file is later
     // #imported, it won't be re-entered.
     if (const FileEntry *FE = SourceMgr.getFileEntryForID(MainFileID))
         HeaderInfo.IncrementIncludeCount(FE);
-
+/*
     std::vector<char> PrologFile;
     PrologFile.reserve(4080);
 
     // FIXME: Don't make a copy.
-//    PrologFile.insert(PrologFile.end(), Predefines.begin(), Predefines.end());
+    PrologFile.insert(PrologFile.end(), Predefines.begin(), Predefines.end());
 
     // Memory buffer must end with a null byte!
     PrologFile.push_back(0);
