@@ -13,14 +13,18 @@
 #include "token.h"
 #include "lexer.h"
 #include "TokenLexer.h"
+#include "PPCallbacks.h"
 #include "DirectoryLookup.h"
 #include "MacroInfo.h"
 #include "MacroArgs.h"
 #include "ScratchBuffer.h"
+#include "Diagnostic.h"
 #include "IdentifierTable.h"
+#include "SourceLocation.h"
 #include "llvm/DenseMap.h"
 #include "llvm/OwningPtr.h"
 #include "llvm/Allocator.h"
+#include "LangOptions.h"
 #include <vector>
 
 namespace CPToyC {
@@ -29,8 +33,11 @@ namespace CPToyC {
         class PreprocessorLexer;
         class HeaderSearch;
         class CommentHandler;
+        class PPCallbacks;
 
         class Preprocessor {
+            Diagnostic          *Diags;
+            LangOptions         Features;
             FileManager         &FileMgr;
             SourceManager       &SourceMgr;
             ScratchBuffer       *ScratchBuf;
@@ -40,6 +47,16 @@ namespace CPToyC {
             ///  objects internal to the Preprocessor.
             llvm::BumpPtrAllocator BP;
 
+            /// Identifiers for builtin macros and other builtins.
+            IdentifierInfo *Ident__LINE__, *Ident__FILE__;   // __LINE__, __FILE__
+            IdentifierInfo *Ident__DATE__, *Ident__TIME__;   // __DATE__, __TIME__
+            IdentifierInfo *Ident__INCLUDE_LEVEL__;          // __INCLUDE_LEVEL__
+            IdentifierInfo *Ident__BASE_FILE__;              // __BASE_FILE__
+            IdentifierInfo *Ident__TIMESTAMP__;              // __TIMESTAMP__
+            IdentifierInfo *Ident__COUNTER__;                // __COUNTER__
+            IdentifierInfo *Ident__VA_ARGS__;                // __VA_ARGS__
+
+            SourceLocation DATELoc, TIMELoc;
             unsigned CounterValue;  // Next __COUNTER__ value.
 
             enum {
@@ -97,6 +114,10 @@ namespace CPToyC {
             };
             std::vector<IncludeStackInfo> IncludeMacroStack;
 
+            /// Callbacks - These are actions invoked when some preprocessor activity is
+            /// encountered (e.g. a file is #included, etc).
+            PPCallbacks *Callbacks;
+
             /// Macros - For each IdentifierInfo with 'HasMacro' set, we keep a mapping
             /// to the actual definition of the macro.
             llvm::DenseMap<IdentifierInfo*, MacroInfo*> Macros;
@@ -113,10 +134,15 @@ namespace CPToyC {
             unsigned NumFastMacroExpanded, NumTokenPaste, NumFastTokenPaste;
             unsigned NumSkipped;
 
+            /// Predefines - This string is the predefined macros that preprocessor
+            /// should use from the command line etc.
+            std::string Predefines;
+
             /// TokenLexerCache - Cache macro expanders to reduce malloc traffic.
             enum { TokenLexerCacheSize = 8 };
             unsigned NumCachedTokenLexers;
             TokenLexer *TokenLexerCache[TokenLexerCacheSize];
+
         private:  // Cached tokens state.
             typedef std::vector<Token> CachedTokensTy;
 
@@ -135,15 +161,23 @@ namespace CPToyC {
             /// invoked (at which point the last position is popped).
             std::vector<CachedTokensTy::size_type> BacktrackPositions;
         public:
-            Preprocessor(SourceManager &SM,
-                         HeaderSearch &Headers,
+            Preprocessor(Diagnostic &diags, const LangOptions &opts,
+                         SourceManager &SM, HeaderSearch &Headers,
                          IdentifierInfoLookup *IILookup = 0);
+
             ~Preprocessor();
+
+            Diagnostic &getDiagnostics() const { return *Diags; }
+            void setDiagnostics(Diagnostic &D) { Diags = &D; }
+
+            const LangOptions &getLangOptions() const { return Features; }
+
             FileManager &getFileManager() const { return FileMgr; }
             SourceManager &getSourceManager() const { return SourceMgr; }
             HeaderSearch &getHeaderSearchInfo() const { return HeaderInfo; }
 
             IdentifierTable &getIdentifierTable() { return Identifiers; }
+            llvm::BumpPtrAllocator &getPreprocessorAllocator() { return BP; }
 
             /// SetCommentRetentionState - Control whether or not the preprocessor retains
             /// comments in output.
@@ -182,6 +216,12 @@ namespace CPToyC {
             macro_iterator macro_begin() const { return Macros.begin(); }
             macro_iterator macro_end() const { return Macros.end(); }
 
+            const std::string &getPredefines() const { return Predefines; }
+            /// setPredefines - Set the predefines for this Preprocessor.  These
+            /// predefines are automatically injected when parsing the main file.
+            void setPredefines(const char *P) { Predefines = P; }
+            void setPredefines(const std::string &P) { Predefines = P; }
+
             /// getIdentifierInfo - Return information about the specified preprocessor
             /// identifier token.  The version of this method that takes two character
             /// pointers is preferred unless the identifier is already available as a
@@ -191,6 +231,7 @@ namespace CPToyC {
                                               const char *NameEnd) {
                 return &Identifiers.get(NameStart, NameEnd);
             }
+
             IdentifierInfo *getIdentifierInfo(const char *NameStr) {
                 return getIdentifierInfo(NameStr, NameStr+strlen(NameStr));
             }
@@ -646,8 +687,6 @@ namespace CPToyC {
             // Macro handling.
             void HandleDefineDirective(Token &Tok);
             void HandleUndefDirective(Token &Tok);
-            // HandleAssertDirective(Token &Tok);
-            // HandleUnassertDirective(Token &Tok);
 
             // Conditional Inclusion.
             void HandleIfdefDirective(Token &Tok, bool isIfndef,

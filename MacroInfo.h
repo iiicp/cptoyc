@@ -124,14 +124,14 @@ namespace CPToyC {
 
             /// setArgumentList - Set the specified list of identifiers as the argument
             /// list for this macro.
-            void setArgumentList(IdentifierInfo* const *List, unsigned NumArgs) {
+            void setArgumentList(IdentifierInfo* const *List, unsigned NumArgs,
+                                 llvm::BumpPtrAllocator &PPAllocator) {
                 assert(ArgumentList == 0 && NumArguments == 0 &&
                        "Argument list already set!");
                 if (NumArgs == 0) return;
 
                 NumArguments = NumArgs;
-                //ArgumentList = PPAllocator.Allocate<IdentifierInfo*>(NumArgs);
-                ArgumentList = new IdentifierInfo*[NumArgs];
+                ArgumentList = PPAllocator.Allocate<IdentifierInfo*>(NumArgs);
                 for (unsigned i = 0; i != NumArgs; ++i)
                     ArgumentList[i] = List[i];
             }

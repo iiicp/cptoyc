@@ -172,7 +172,7 @@ MemoryBuffer *MemoryBuffer::getFile(const char *Filename, std::string *ErrStr, i
     }
 
     llvm::OwningPtr<MemoryBuffer> SB(Buf);
-    char *BufPtr = const_cast<char *>(Buf->getBufferStart());
+    char *BufPtr = const_cast<char *>(SB->getBufferStart());
 
     size_t BytesLeft = FileSize;
     while (BytesLeft) {
@@ -190,7 +190,7 @@ MemoryBuffer *MemoryBuffer::getFile(const char *Filename, std::string *ErrStr, i
         }
     }
     close(FD);
-    return Buf;;
+    return SB.take();
 }
 
 namespace {

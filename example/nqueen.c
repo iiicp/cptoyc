@@ -5,8 +5,14 @@
 // $ gcc -static -o tmp tmp.s
 // $ ./tmp
 
+#define LOG(format, args...) fprintf(stdout, format, args)
+#define LOG_C99(format, ...) fprintf(stdout, format, __VA_ARGS__)
 #define ROW 10
 int print_board(int (*board)[10]) {
+#define A 10+B
+#define B 10+A
+    int a = A;
+    int b = B;
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < 10; j++)
       if (board[i][j])

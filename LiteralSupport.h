@@ -21,6 +21,7 @@ namespace llvm {
 
 namespace CPToyC {
     namespace Compiler {
+        class Diagnostic;
         class Preprocessor;
         class Token;
         class SourceLocation;

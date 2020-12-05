@@ -25,6 +25,7 @@ namespace llvm {
 
 namespace CPToyC {
     namespace Compiler {
+        class LangOptions;
         class IdentifierInfo;
         class IdentifierTable;
         class SourceLocation;
@@ -35,6 +36,8 @@ namespace CPToyC {
         class IdentifierInfo {
             unsigned TokenID            : 8;        // tok::identifier
             bool HasMacro               : 1;        // True if there is a #define for this.
+            bool IsExtension            : 1;        // True if identifier is a lang extension.
+            bool IsPoisoned             : 1;        // True if identifier is poisoned.
             bool NeedsHandleIdentifier  : 1;        // See "RecomputeNeedsHandleIdentifier".
             void *FETokenInfo;                      // language front-end
 
@@ -107,6 +110,31 @@ namespace CPToyC {
             /// For example, "define" will return tok::pp_define.
             tok::PPKeywordKind getPPKeywordID() const;
 
+            /// get/setExtension - Initialize information about whether or not this
+            /// language token is an extension.  This controls extension warnings, and is
+            /// only valid if a custom token ID is set.
+            bool isExtensionToken() const { return IsExtension; }
+            void setIsExtensionToken(bool Val) {
+                IsExtension = Val;
+                if (Val)
+                    NeedsHandleIdentifier = 1;
+                else
+                    RecomputeNeedsHandleIdentifier();
+            }
+
+            /// setIsPoisoned - Mark this identifier as poisoned.  After poisoning, the
+            /// Preprocessor will emit an error every time this token is used.
+            void setIsPoisoned(bool Value = true) {
+                IsPoisoned = Value;
+                if (Value)
+                    NeedsHandleIdentifier = 1;
+                else
+                    RecomputeNeedsHandleIdentifier();
+            }
+
+            /// isPoisoned - Return true if this token has been poisoned.
+            bool isPoisoned() const { return IsPoisoned; }
+
             /// getFETokenInfo/setFETokenInfo - The language front-end is allowed to
             /// associate arbitrary metadata with this token.
             template<typename T>
@@ -169,7 +197,7 @@ namespace CPToyC {
             IdentifierInfoLookup* ExternalLookup;
 
         public:
-            IdentifierTable(IdentifierInfoLookup *externalLookup = nullptr);
+            IdentifierTable(const LangOptions &LangOpts, IdentifierInfoLookup *externalLookup = nullptr);
 
             /// \brief Set the external identifier lookup mechanism.
             void setExternalIdentifierLookup(IdentifierInfoLookup *IILookup) {
@@ -261,7 +289,7 @@ namespace CPToyC {
 
             /// PrintStats - Print some statistics to stderr that indicate how well the
             /// hashing is doing.
-            void AddKeywords();
+            void AddKeywords(const LangOptions &LangOpts);
         };
     }
 }

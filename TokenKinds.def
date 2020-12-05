@@ -201,6 +201,10 @@ KEYWORD(_Complex                    , KEYALL)
 KEYWORD(_Imaginary                  , KEYALL)
 KEYWORD(__func__                    , KEYALL)
 
+KEYWORD(bool                        , BOOLSUPPORT)
+KEYWORD(false                       , BOOLSUPPORT)
+KEYWORD(true                        , BOOLSUPPORT)
+
 ANNOTATION(typename)     // annotation for a C typedef name, a C++ (possibly
                          // qualified) typename, e.g. "foo::MyClass", or
                          // template-id that names a type ("std::vector<int>")

@@ -12,6 +12,7 @@
 #include "llvm/FoldingSet.h"
 #include "llvm/DenseMap.h"
 #include <cstdio>
+#include "LangOptions.h"
 
 using namespace CPToyC::Compiler;
 
@@ -22,6 +23,8 @@ using namespace CPToyC::Compiler;
 IdentifierInfo::IdentifierInfo() {
     TokenID = tok::identifier;
     HasMacro = false;
+    IsExtension = false;
+    IsPoisoned = false;
     NeedsHandleIdentifier = false;
     FETokenInfo = nullptr;
     Entry = nullptr;
@@ -34,13 +37,13 @@ IdentifierInfoLookup::~IdentifierInfoLookup() {}
 
 ExternalIdentifierLookup::~ExternalIdentifierLookup() {}
 
-IdentifierTable::IdentifierTable(IdentifierInfoLookup* externalLookup)
+IdentifierTable::IdentifierTable(const LangOptions &LangOpts, IdentifierInfoLookup* externalLookup)
         : HashTable(8192), // Start with space for 8K identifiers.
           ExternalLookup(externalLookup) {
 
     // Populate the identifier table with info about keywords for the current
     // language.
-    AddKeywords();
+    AddKeywords(LangOpts);
 }
 
 //===----------------------------------------------------------------------===//
@@ -69,29 +72,30 @@ namespace {
 /// in the specified language, and set to 2 if disabled in the
 /// specified language.
 static void AddKeyword(const char *Keyword, unsigned KWLen,
-                       tok::TokenKind TokenCode, unsigned Flags, IdentifierTable &Table) {
+                       tok::TokenKind TokenCode, unsigned Flags, const LangOptions &LangOpts, IdentifierTable &Table) {
     unsigned AddResult = 0;
     if (Flags & KEYALL) AddResult = 2;
-    else if (Flags & KEYC99) AddResult = 2;
-    else if (Flags & BOOLSUPPORT) AddResult = 2;
+    else if (LangOpts.CPlusPlus && (Flags & KEYCXX)) AddResult = 2;
+    else if (LangOpts.CPlusPlus0x && (Flags & KEYCXX0X)) AddResult = 2;
+    else if (LangOpts.C99 && (Flags & KEYC99)) AddResult = 2;
+    else if (LangOpts.GNUMode && (Flags & KEYGNU)) AddResult = 1;
+    else if (LangOpts.Microsoft && (Flags & KEYMS)) AddResult = 1;
+    else if (LangOpts.Bool && (Flags & BOOLSUPPORT)) AddResult = 2;
 
     // AddResult == 1 表示扩展字段
-
     // Don't add this keyword if disabled in this language.
     if (AddResult == 0) return;
-
-
     IdentifierInfo &Info = Table.get(Keyword, Keyword+KWLen);
     Info.setTokenID(TokenCode);
 }
 
 /// AddKeywords - Add all keywords to the symbol table.
 ///
-void IdentifierTable::AddKeywords() {
+void IdentifierTable::AddKeywords(const LangOptions &LangOpts) {
     // Add keywords and tokens for the current language.
 #define KEYWORD(NAME, FLAGS) \
   AddKeyword(#NAME, strlen(#NAME), tok::kw_ ## NAME,  \
-             FLAGS, *this);
+             FLAGS, LangOpts, *this);
 #include "TokenKinds.def"
 }
 

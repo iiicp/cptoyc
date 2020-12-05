@@ -1126,7 +1126,6 @@ bool Preprocessor::ReadMacroDefinitionArgList(MacroInfo *MI) {
                 std::cerr << "Diag(Tok, diag::err_pp_expected_ident_in_arg_list);" << std::endl;
                 return true;
             case tok::ellipsis:  // #define X(... -> C99 varargs
-#if 0
                 // Warn if use of C99 feature in non-C99 mode.
                 //if (!Features.C99) Diag(Tok, diag::ext_variadic_macro);
 
@@ -1140,7 +1139,6 @@ bool Preprocessor::ReadMacroDefinitionArgList(MacroInfo *MI) {
                 Arguments.push_back(Ident__VA_ARGS__);
                 MI->setIsC99Varargs();
                 MI->setArgumentList(&Arguments[0], Arguments.size(), BP);
-#endif
                 return false;
             case tok::eom:  // #define X(
                 std::cerr << "Diag(Tok, diag::err_pp_missing_rparen_in_macro_def);" << std::endl;
@@ -1174,7 +1172,7 @@ bool Preprocessor::ReadMacroDefinitionArgList(MacroInfo *MI) {
                         std::cerr << "Diag(Tok, diag::err_pp_expected_comma_in_arg_list);" << std::endl;
                         return true;
                     case tok::r_paren: // #define X(A)
-                        MI->setArgumentList(&Arguments[0], Arguments.size());
+                        MI->setArgumentList(&Arguments[0], Arguments.size(), BP);
                         return false;
                     case tok::comma:  // #define X(A,
                         break;
@@ -1190,7 +1188,7 @@ bool Preprocessor::ReadMacroDefinitionArgList(MacroInfo *MI) {
                         }
 
                         MI->setIsGNUVarargs();
-                        MI->setArgumentList(&Arguments[0], Arguments.size());
+                        MI->setArgumentList(&Arguments[0], Arguments.size(), BP);
                         return false;
                 }
         }

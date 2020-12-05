@@ -50,6 +50,13 @@ Preprocessor::Preprocessor(SourceManager &SM,
     NumCachedTokenLexers = 0;
 
     CachedLexPos = 0;
+
+    // "Poison" __VA_ARGS__, which can only appear in the expansion of a macro.
+    // This gets unpoisoned where it is allowed.
+    (Ident__VA_ARGS__ = getIdentifierInfo("__VA_ARGS__"))->setIsPoisoned();
+
+    // Initialize builtin macros like __LINE__ and friends.
+    RegisterBuiltinMacros();
 }
 
 Preprocessor::~Preprocessor() {

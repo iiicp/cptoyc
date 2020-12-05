@@ -43,4 +43,5 @@ add_executable(cptoyc
         LiteralSupport.h
         PPCaching.cpp
         PPExpressions.cpp
+        Diagnostic.cpp
         ${LLVMADT})

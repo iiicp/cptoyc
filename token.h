@@ -34,7 +34,7 @@ namespace CPToyC {
         class Token {
         private:
             /// The location of the token.
-            SourceLocation LocLL;
+            SourceLocation Loc;
 
             // Conceptually these next two fields could be in a union.  However, this
             // causes gcc 4.2 to pessimize LexTokenInternal, a very performance critical
@@ -62,12 +62,12 @@ namespace CPToyC {
 
             /// Kind - The actual flavor of token this is.
             ///
-            unsigned KindLL : 8;  // DON'T make Kind a 'tok::TokenKind';
+            tok::TokenKind Kind;  // DON'T make Kind a 'tok::TokenKind';
             // MSVC will treat it as a signed char and
             // TokenKinds > 127 won't be handled correctly.
 
             /// Flags - Bits we track about this token, members of the TokenFlags enum.
-            unsigned Flags : 8;
+            unsigned short Flags;
 
         public:
             // Various flags set per token:
@@ -78,13 +78,13 @@ namespace CPToyC {
                 NeedsCleaning = 0x08   // Contained an escaped newline or trigraph.
             };
 
-            tok::TokenKind getKind() const { return (tok::TokenKind)KindLL; }
-            void setKind(tok::TokenKind K) { KindLL = K; }
+            tok::TokenKind getKind() const { return Kind; }
+            void setKind(tok::TokenKind K) { Kind = K; }
 
             /// is/isNot - Predicates to check if this token is a specific kind, as in
             /// "if (Tok.is(tok::l_brace)) {...}".
-            bool is(tok::TokenKind K) const { return KindLL == (unsigned) K; }
-            bool isNot(tok::TokenKind K) const { return KindLL != (unsigned) K; }
+            bool is(tok::TokenKind K) const { return Kind == K; }
+            bool isNot(tok::TokenKind K) const { return Kind != K; }
 
             /// isLiteral - Return true if this is a "literal", like a numeric
             /// constant, string, etc.
@@ -100,13 +100,13 @@ namespace CPToyC {
 
             /// getLocation - Return a source location identifier for the specified
             /// offset in the current file.
-            SourceLocation getLocation() const { return LocLL; }
+            SourceLocation getLocation() const { return Loc; }
             unsigned getLength() const {
                 assert(!isAnnotation() && "Annotation tokens have no length field");
                 return UintData;
             }
 
-            void setLocation(SourceLocation L) { LocLL = L; }
+            void setLocation(SourceLocation L) { Loc = L; }
             void setLength(unsigned Len) {
                 assert(!isAnnotation() && "Annotation tokens have no length field");
                 UintData = Len;
@@ -132,16 +132,17 @@ namespace CPToyC {
             }
 
             const char *getName() const {
-                return tok::getTokenName( (tok::TokenKind) KindLL);
+                return tok::getTokenName(Kind);
             }
 
             /// startToken - Reset all flags to cleared.
             ///
             void startToken() {
-                KindLL = tok::unknown;
+                Kind = tok::unknown;
                 Flags = 0;
-                PtrData = 0;
-                LocLL = SourceLocation();
+                PtrData = nullptr;
+                UintData = 0;
+                Loc = SourceLocation();
             }
 
             IdentifierInfo *getIdentifierInfo() const {

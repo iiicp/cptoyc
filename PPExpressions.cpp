@@ -83,10 +83,10 @@ static bool EvaluateValue(PPValue &Result, Token &PeekTok, DefinedTracker &DT,
         // into a simple 0, unless it is the C++ keyword "true", in which case it
         // turns into "1".
         if (!II->isStr("defined")) {
-//            if (ValueLive)
-//                PP.Diag(PeekTok, diag::warn_pp_undef_identifier) << II;
-//todo
-//            Result.Val = II->getTokenID() == tok::kw_true;
+            if (ValueLive)
+                std::cerr << "PP.Diag(PeekTok, diag::warn_pp_undef_identifier) << II;\n";
+
+            Result.Val = II->getTokenID() == tok::kw_true;
             Result.Val.setIsUnsigned(false);  // "0" is signed intmax_t 0.
             Result.setRange(PeekTok.getLocation());
             PP.LexNonComment(PeekTok);
@@ -108,8 +108,8 @@ static bool EvaluateValue(PPValue &Result, Token &PeekTok, DefinedTracker &DT,
         }
 
         // If we don't have a pp-identifier now, this is an error.
-        if ((II = PeekTok.getIdentifierInfo()) == 0) {
-//            PP.Diag(PeekTok, diag::err_pp_defined_requires_identifier);
+        if ((II = PeekTok.getIdentifierInfo()) == nullptr) {
+            std::cerr << "PP.Diag(PeekTok, diag::err_pp_defined_requires_identifier);\n";
             return true;
         }
 
@@ -130,8 +130,8 @@ static bool EvaluateValue(PPValue &Result, Token &PeekTok, DefinedTracker &DT,
         // If we are in parens, ensure we have a trailing ).
         if (LParenLoc.isValid()) {
             if (PeekTok.isNot(tok::r_paren)) {
-//                PP.Diag(PeekTok.getLocation(), diag::err_pp_missing_rparen);
-//                PP.Diag(LParenLoc, diag::note_matching) << "(";
+                std::cerr << "PP.Diag(PeekTok.getLocation(), diag::err_pp_missing_rparen);";
+                std::cerr << "PP.Diag(LParenLoc, diag::note_matching)\n";
                 return true;
             }
             // Consume the ).
@@ -147,12 +147,12 @@ static bool EvaluateValue(PPValue &Result, Token &PeekTok, DefinedTracker &DT,
 
     switch (PeekTok.getKind()) {
         default:  // Non-value token.
-//            PP.Diag(PeekTok, diag::err_pp_expr_bad_token_start_expr);
+            std::cerr << "PP.Diag(PeekTok, diag::err_pp_expr_bad_token_start_expr);" << std::endl;
             return true;
         case tok::eom:
         case tok::r_paren:
             // If there is no expression, report and exit.
-//            PP.Diag(PeekTok, diag::err_pp_expected_value_in_expr);
+            std::cerr << "PP.Diag(PeekTok, diag::err_pp_expected_value_in_expr);" << std::endl;
             return true;
         case tok::numeric_constant: {
             llvm::SmallString<64> IntegerBuffer;
@@ -165,7 +165,7 @@ static bool EvaluateValue(PPValue &Result, Token &PeekTok, DefinedTracker &DT,
                 return true; // a diagnostic was already reported.
 
             if (Literal.isFloatingLiteral() || Literal.isImaginary) {
-//                PP.Diag(PeekTok, diag::err_pp_illegal_floating_literal);
+                std::cerr << "PP.Diag(PeekTok, diag::err_pp_illegal_floating_literal);" << std::endl;
                 return true;
             }
             assert(Literal.isIntegerLiteral() && "Unknown ppnumber");
@@ -178,7 +178,8 @@ static bool EvaluateValue(PPValue &Result, Token &PeekTok, DefinedTracker &DT,
             // Parse the integer literal into Result.
             if (Literal.GetIntegerValue(Result.Val)) {
                 // Overflow parsing integer literal.
-//                if (ValueLive) PP.Diag(PeekTok, diag::warn_integer_too_large);
+                if (ValueLive)
+                    std::cerr << "PP.Diag(PeekTok, diag::warn_integer_too_large);" << std::endl;
                 Result.Val.setIsUnsigned(true);
             } else {
                 // Set the signedness of the result to match whether there was a U suffix
@@ -191,8 +192,8 @@ static bool EvaluateValue(PPValue &Result, Token &PeekTok, DefinedTracker &DT,
                 // is 64-bits.
                 if (!Literal.isUnsigned && Result.Val.isNegative()) {
                     // Don't warn for a hex literal: 0x8000..0 shouldn't warn.
-//                    if (ValueLive && Literal.getRadix() != 16)
-//                        PP.Diag(PeekTok, diag::warn_integer_too_large_for_signed);
+                    if (ValueLive && Literal.getRadix() != 16)
+                        std::cerr << "PP.Diag(PeekTok, diag::warn_integer_too_large_for_signed);\n";
                     Result.Val.setIsUnsigned(true);
                 }
             }
@@ -259,9 +260,9 @@ static bool EvaluateValue(PPValue &Result, Token &PeekTok, DefinedTracker &DT,
                     return true;
 
                 if (PeekTok.isNot(tok::r_paren)) {
-//                    PP.Diag(PeekTok.getLocation(), diag::err_pp_expected_rparen)
-//                            << Result.getRange();
-//                    PP.Diag(Start, diag::note_matching) << "(";
+                    std::cerr << "PP.Diag(PeekTok.getLocation(), diag::err_pp_expected_rparen), ";
+                    std::cerr << "Result.getRange();";
+                    std::cerr << "PP.Diag(Start, diag::note_matching);\n";
                     return true;
                 }
                 DT.State = DefinedTracker::Unknown;
@@ -291,8 +292,8 @@ static bool EvaluateValue(PPValue &Result, Token &PeekTok, DefinedTracker &DT,
             bool Overflow = !Result.isUnsigned() && Result.Val.isMinSignedValue();
 
             // If this operator is live and overflowed, report the issue.
-//            if (Overflow && ValueLive)
-//                PP.Diag(Loc, diag::warn_pp_expr_overflow) << Result.getRange();
+            if (Overflow && ValueLive)
+                std::cerr << "PP.Diag(Loc, diag::warn_pp_expr_overflow) << Result.getRange();\n";
 
             DT.State = DefinedTracker::Unknown;
             return false;
@@ -379,8 +380,8 @@ static bool EvaluateDirectiveSubExpr(PPValue &LHS, unsigned MinPrec,
     unsigned PeekPrec = getPrecedence(PeekTok.getKind());
     // If this token isn't valid, report the error.
     if (PeekPrec == ~0U) {
-//        PP.Diag(PeekTok.getLocation(), diag::err_pp_expr_bad_token_binop)
-//                << LHS.getRange();
+        std::cerr << "PP.Diag(PeekTok.getLocation(), diag::err_pp_expr_bad_token_binop)";
+        std::cerr << "LHS.getRange();\n";
         return true;
     }
 
@@ -423,8 +424,8 @@ static bool EvaluateDirectiveSubExpr(PPValue &LHS, unsigned MinPrec,
 
         // If this token isn't valid, report the error.
         if (PeekPrec == ~0U) {
-//            PP.Diag(PeekTok.getLocation(), diag::err_pp_expr_bad_token_binop)
-//                    << RHS.getRange();
+            std::cerr << "PP.Diag(PeekTok.getLocation(), diag::err_pp_expr_bad_token_binop)";
+            std::cerr << "RHS.getRange();\n";
             return true;
         }
 
@@ -467,18 +468,18 @@ static bool EvaluateDirectiveSubExpr(PPValue &LHS, unsigned MinPrec,
                 Res.setIsUnsigned(LHS.isUnsigned()|RHS.isUnsigned());
                 // If this just promoted something from signed to unsigned, and if the
                 // value was negative, warn about it.
-//                if (ValueLive && Res.isUnsigned()) {
-//                    if (!LHS.isUnsigned() && LHS.Val.isNegative())
-//                        PP.Diag(OpLoc, diag::warn_pp_convert_lhs_to_positive)
+                if (ValueLive && Res.isUnsigned()) {
+                    if (!LHS.isUnsigned() && LHS.Val.isNegative())
+                        std::cerr << "PP.Diag(OpLoc, diag::warn_pp_convert_lhs_to_positive)\n";
 //                                << LHS.Val.toString(10, true) + " to " +
 //                                   LHS.Val.toString(10, false)
 //                                << LHS.getRange() << RHS.getRange();
-//                    if (!RHS.isUnsigned() && RHS.Val.isNegative())
-//                        PP.Diag(OpLoc, diag::warn_pp_convert_rhs_to_positive)
+                    if (!RHS.isUnsigned() && RHS.Val.isNegative())
+                        std::cerr << "PP.Diag(OpLoc, diag::warn_pp_convert_rhs_to_positive)\n";
 //                                << RHS.Val.toString(10, true) + " to " +
 //                                   RHS.Val.toString(10, false)
 //                                << LHS.getRange() << RHS.getRange();
-//                }
+                }
                 LHS.Val.setIsUnsigned(Res.isUnsigned());
                 RHS.Val.setIsUnsigned(Res.isUnsigned());
         }
@@ -491,8 +492,7 @@ static bool EvaluateDirectiveSubExpr(PPValue &LHS, unsigned MinPrec,
                 if (RHS.Val != 0)
                     Res = LHS.Val % RHS.Val;
                 else if (ValueLive) {
-//                    PP.Diag(OpLoc, diag::err_pp_remainder_by_zero)
-//                            << LHS.getRange() << RHS.getRange();
+                    std::cerr << "PP.Diag(OpLoc, diag::err_pp_remainder_by_zero)\n";
                     return true;
                 }
                 break;
@@ -502,8 +502,7 @@ static bool EvaluateDirectiveSubExpr(PPValue &LHS, unsigned MinPrec,
                     if (LHS.Val.isSigned())   // MININT/-1  -->  overflow.
                         Overflow = LHS.Val.isMinSignedValue() && RHS.Val.isAllOnesValue();
                 } else if (ValueLive) {
-//                    PP.Diag(OpLoc, diag::err_pp_division_by_zero)
-//                            << LHS.getRange() << RHS.getRange();
+                    std::cerr << "PP.Diag(OpLoc, diag::err_pp_division_by_zero)\n";
                     return true;
                 }
                 break;
@@ -596,17 +595,15 @@ static bool EvaluateDirectiveSubExpr(PPValue &LHS, unsigned MinPrec,
             case tok::comma:
                 // Comma is invalid in pp expressions in c89/c++ mode, but is valid in C99
                 // if not being evaluated.
-//                if (!PP.getLangOptions().C99 || ValueLive)
-//                    PP.Diag(OpLoc, diag::ext_pp_comma_expr)
-//                            << LHS.getRange() << RHS.getRange();
+                if (ValueLive)
+                    std::cerr << "PP.Diag(OpLoc, diag::ext_pp_comma_expr)\n";
+
                 Res = RHS.Val; // LHS = LHS,RHS -> RHS.
                 break;
             case tok::question: {
                 // Parse the : part of the expression.
                 if (PeekTok.isNot(tok::colon)) {
-//                    PP.Diag(PeekTok.getLocation(), diag::err_expected_colon)
-//                            << LHS.getRange(), RHS.getRange();
-//                    PP.Diag(OpLoc, diag::note_matching) << "?";
+                    std::cerr << "PP.Diag(PeekTok.getLocation(), diag::err_expected_colon)\n";
                     return true;
                 }
                 // Consume the :.
@@ -639,15 +636,14 @@ static bool EvaluateDirectiveSubExpr(PPValue &LHS, unsigned MinPrec,
             }
             case tok::colon:
                 // Don't allow :'s to float around without being part of ?: exprs.
-//                PP.Diag(OpLoc, diag::err_pp_colon_without_question)
-//                        << LHS.getRange() << RHS.getRange();
+                std::cerr << "PP.Diag(OpLoc, diag::err_pp_colon_without_question)\n";
                 return true;
         }
 
         // If this operator is live and overflowed, report the issue.
-//        if (Overflow && ValueLive)
-//            PP.Diag(OpLoc, diag::warn_pp_expr_overflow)
-//                    << LHS.getRange() << RHS.getRange();
+        if (Overflow && ValueLive)
+            std::cerr << "PP.Diag(OpLoc, diag::warn_pp_expr_overflow)";
+            std::cerr << "LHS.getRange() << RHS.getRange();\n";
 
         // Put the result back into 'LHS' for our next iteration.
         LHS.Val = Res;
@@ -703,7 +699,7 @@ EvaluateDirectiveExpression(IdentifierInfo *&IfNDefMacro) {
     // If we aren't at the tok::eom token, something bad happened, like an extra
     // ')' token.
     if (Tok.isNot(tok::eom)) {
-//        Diag(Tok, diag::err_pp_expected_eol);
+        std::cerr << "Diag(Tok, diag::err_pp_expected_eol);\n";
         DiscardUntilEndOfDirective();
     }
 

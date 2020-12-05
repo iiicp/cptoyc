@@ -17,6 +17,8 @@
 
 using namespace CPToyC::Compiler;
 
+PPCallbacks::~PPCallbacks() {}
+
 //===----------------------------------------------------------------------===//
 // Miscellaneous Methods.
 //===----------------------------------------------------------------------===//
@@ -228,7 +230,7 @@ bool Preprocessor::HandleEndOfTokenLexer(Token &Result) {
     if (NumCachedTokenLexers == TokenLexerCacheSize)
         CurTokenLexer.reset();
     else
-        TokenLexerCache[NumCachedTokenLexers++] = CurTokenLexer.get();
+        TokenLexerCache[NumCachedTokenLexers++] = CurTokenLexer.take();
 
     // Handle this like a #include file being popped off the stack.
     return HandleEndOfFile(Result, true);
@@ -245,7 +247,7 @@ void Preprocessor::RemoveTopOfLexerStack() {
         if (NumCachedTokenLexers == TokenLexerCacheSize)
             CurTokenLexer.reset();
         else
-            TokenLexerCache[NumCachedTokenLexers++] = CurTokenLexer.get();
+            TokenLexerCache[NumCachedTokenLexers++] = CurTokenLexer.take();
     }
 
     PopIncludeMacroStack();

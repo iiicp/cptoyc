@@ -46,13 +46,13 @@ static IdentifierInfo *RegisterBuiltinMacro(Preprocessor &PP, const char *Name){
 /// RegisterBuiltinMacros - Register builtin macros, such as __LINE__ with the
 /// identifier table.
 void Preprocessor::RegisterBuiltinMacros() {
-#if 0
+#if 1
     Ident__LINE__ = RegisterBuiltinMacro(*this, "__LINE__");
     Ident__FILE__ = RegisterBuiltinMacro(*this, "__FILE__");
     Ident__DATE__ = RegisterBuiltinMacro(*this, "__DATE__");
     Ident__TIME__ = RegisterBuiltinMacro(*this, "__TIME__");
     Ident__COUNTER__ = RegisterBuiltinMacro(*this, "__COUNTER__");
-    Ident_Pragma  = RegisterBuiltinMacro(*this, "_Pragma");
+//    Ident_Pragma  = RegisterBuiltinMacro(*this, "_Pragma");
 
     // GCC Extensions.
     Ident__BASE_FILE__     = RegisterBuiltinMacro(*this, "__BASE_FILE__");
@@ -60,8 +60,8 @@ void Preprocessor::RegisterBuiltinMacros() {
     Ident__TIMESTAMP__     = RegisterBuiltinMacro(*this, "__TIMESTAMP__");
 
     // Clang Extensions.
-    Ident__has_feature     = RegisterBuiltinMacro(*this, "__has_feature");
-    Ident__has_builtin     = RegisterBuiltinMacro(*this, "__has_builtin");
+//    Ident__has_feature     = RegisterBuiltinMacro(*this, "__has_feature");
+//    Ident__has_builtin     = RegisterBuiltinMacro(*this, "__has_builtin");
 #endif
 }
 
@@ -500,22 +500,22 @@ static bool HasFeature(const Preprocessor &PP, const IdentifierInfo *II) {
 /// ExpandBuiltinMacro - If an identifier token is read that is to be expanded
 /// as a builtin macro, handle it and return the next token as 'Tok'.
 void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
-#if 0
+#if 1
     // Figure out which token this is.
     IdentifierInfo *II = Tok.getIdentifierInfo();
     assert(II && "Can't be a macro without id info!");
 
     // If this is an _Pragma directive, expand it, invoke the pragma handler, then
     // lex the token after it.
-    if (II == Ident_Pragma)
-        return Handle_Pragma(Tok);
+//    if (II == Ident_Pragma)
+//        return Handle_Pragma(Tok);
 
     ++NumBuiltinMacroExpanded;
 
     char TmpBuffer[100];
 
     // Set up the return result.
-    Tok.setIdentifierInfo(0);
+    Tok.setIdentifierInfo(nullptr);
     Tok.clearFlag(Token::NeedsCleaning);
 
     if (II == Ident__LINE__) {
@@ -548,7 +548,7 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
         // __BASE_FILE__ is a GNU extension that returns the top of the presumed
         // #include stack instead of the current file.
         if (II == Ident__BASE_FILE__) {
-            Diag(Tok, diag::ext_pp_base_file);
+            std::cerr << "Diag(Tok, diag::ext_pp_base_file);\n";
             SourceLocation NextLoc = PLoc.getIncludeLoc();
             while (NextLoc.isValid()) {
                 PLoc = SourceMgr.getPresumedLoc(NextLoc);
@@ -578,7 +578,7 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
                                                          Tok.getLocation(),
                                                          Tok.getLength()));
     } else if (II == Ident__INCLUDE_LEVEL__) {
-        Diag(Tok, diag::ext_pp_include_level);
+        std::cerr << "Diag(Tok, diag::ext_pp_include_level);\n";
 
         // Compute the presumed include depth of this token.  This can be affected
         // by GNU line markers.
@@ -596,7 +596,7 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     } else if (II == Ident__TIMESTAMP__) {
         // MSVC, ICC, GCC, VisualAge C++ extension.  The generated string should be
         // of the form "Ddd Mmm dd hh::mm::ss yyyy", which is returned by asctime.
-        Diag(Tok, diag::ext_pp_timestamp);
+        std::cerr << "Diag(Tok, diag::ext_pp_timestamp);\n";
 
         // Get the file that we are lexing out of.  If we're currently lexing from
         // a macro, dig into the include stack.
@@ -622,13 +622,15 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
         Tok.setKind(tok::string_literal);
         CreateString(TmpBuffer, Len+1, Tok, Tok.getLocation());
     } else if (II == Ident__COUNTER__) {
-        Diag(Tok, diag::ext_pp_counter);
+        std::cerr << "Diag(Tok, diag::ext_pp_counter);\n";
 
         // __COUNTER__ expands to a simple numeric value.
         sprintf(TmpBuffer, "%u", CounterValue++);
         Tok.setKind(tok::numeric_constant);
         CreateString(TmpBuffer, strlen(TmpBuffer), Tok, Tok.getLocation());
-    } else if (II == Ident__has_feature ||
+    }
+#if 0
+    else if (II == Ident__has_feature ||
                II == Ident__has_builtin) {
         // The argument to these two builtins should be a parenthesized identifier.
         SourceLocation StartLoc = Tok.getLocation();
@@ -665,7 +667,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
         sprintf(TmpBuffer, "%d", (int)Value);
         Tok.setKind(tok::numeric_constant);
         CreateString(TmpBuffer, strlen(TmpBuffer), Tok, Tok.getLocation());
-    } else {
+    }
+#endif
+    else {
         assert(0 && "Unknown identifier!");
     }
 #endif
