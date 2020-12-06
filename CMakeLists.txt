@@ -1,47 +1,12 @@
 cmake_minimum_required(VERSION 3.14.1)
 project(cptoyc)
 set(CMAKE_CXX_STANDARD 17)
-aux_source_directory(llvm LLVMADT)
-add_executable(cptoyc
-        lexer.h
-        lexer.cpp
-        main.cpp
-        token.h
-        MemoryBuffer.cpp
-        Preprocessor.h
-        Preprocessor.cpp
-        PreprocessorLexer.cpp
-        PreprocessorLexer.h
-        TokenKinds.cpp
-        TokenKinds.h
-        PPLexerChange.cpp
-        IdentifierTable.cpp
-        IdentifierTable.h
-        HeaderSearch.cpp
-        HeaderSearch.h
-        DirectoryLookup.h
-        HeaderMap.cpp
-        HeaderMap.h
-        MultipleIncludeOpt.h
-        MacroInfo.cpp
-        MacroInfo.h
-        PPMacroExpansion.cpp
-        MacroArgs.cpp
-        MacroArgs.h
-        TokenLexer.cpp
-        TokenLexer.h
-        PPDirectives.cpp
-        ScratchBuffer.cpp
-        ScratchBuffer.h
-        FileManager.cpp
-        FileManager.h
-        SourceLocation.cpp
-        SourceLocation.h
-        SourceManager.cpp
-        SourceManager.h
-        LiteralSupport.cpp
-        LiteralSupport.h
-        PPCaching.cpp
-        PPExpressions.cpp
-        Diagnostic.cpp
-        ${LLVMADT})
+
+add_subdirectory(Basic)
+add_subdirectory(Frontend)
+add_subdirectory(Lex)
+add_subdirectory(llvm)
+
+add_executable(cptoyc main.cpp)
+
+target_link_libraries(cptoyc Basic Lex Frontend LLVMADT)

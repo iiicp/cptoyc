@@ -5,6 +5,9 @@
 // $ gcc -static -o tmp tmp.s
 // $ ./tmp
 
+
+#include <stdio.h>
+
 #define LOG(format, args...) fprintf(stdout, format, args)
 #define LOG_C99(format, ...) fprintf(stdout, format, __VA_ARGS__)
 #define ROW 10

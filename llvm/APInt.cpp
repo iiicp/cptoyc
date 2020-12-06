@@ -20,7 +20,7 @@
 //#include "llvm/Support/Debug.h"
 //#include "llvm/Support/ErrorHandling.h"
 #include "MathExtras.h"
-//#include "llvm/Support/raw_ostream.h"
+#include "raw_ostream.h"
 #include <cmath>
 #include <limits>
 #include <cstring>
@@ -1626,7 +1626,7 @@ static void KnuthDiv(unsigned *u, unsigned *v, unsigned *q, unsigned* r,
   // D2. [Initialize j.]  Set j to m. This is the loop counter over the places.
   int j = m;
   do {
-//    DEBUG(errs() << "KnuthDiv: quotient digit #" << j << '\n');
+    errs() << "KnuthDiv: quotient digit #" << j << '\n';
     // D3. [Calculate q'.].
     //     Set qp = (u[j+n]*b + u[j+n-1]) / v[n-1]. (qp=qprime=q')
     //     Set rp = (u[j+n]*b + u[j+n-1]) % v[n-1]. (rp=rprime=r')
@@ -1636,7 +1636,7 @@ static void KnuthDiv(unsigned *u, unsigned *v, unsigned *q, unsigned* r,
     // value qp is one too large, and it eliminates all cases where qp is two
     // too large.
     uint64_t dividend = ((uint64_t(u[j+n]) << 32) + u[j+n-1]);
-//    DEBUG(errs() << "KnuthDiv: dividend == " << dividend << '\n');
+    errs() << "KnuthDiv: dividend == " << dividend << '\n';
     uint64_t qp = dividend / v[n-1];
     uint64_t rp = dividend % v[n-1];
     if (qp == b || qp*v[n-2] > b*rp + u[j+n-2]) {
@@ -1645,7 +1645,7 @@ static void KnuthDiv(unsigned *u, unsigned *v, unsigned *q, unsigned* r,
       if (rp < b && (qp == b || qp*v[n-2] > b*rp + u[j+n-2]))
         qp--;
     }
-//    DEBUG(errs() << "KnuthDiv: qp == " << qp << ", rp == " << rp << '\n');
+    errs() << "KnuthDiv: qp == " << qp << ", rp == " << rp << '\n';
 
     // D4. [Multiply and subtract.] Replace (u[j+n]u[j+n-1]...u[j]) with
     // (u[j+n]u[j+n-1]..u[j]) - qp * (v[n-1]...v[1]v[0]). This computation
@@ -1656,9 +1656,9 @@ static void KnuthDiv(unsigned *u, unsigned *v, unsigned *q, unsigned* r,
       uint64_t u_tmp = uint64_t(u[j+i]) | (uint64_t(u[j+i+1]) << 32);
       uint64_t subtrahend = uint64_t(qp) * uint64_t(v[i]);
       bool borrow = subtrahend > u_tmp;
-//      DEBUG(errs() << "KnuthDiv: u_tmp == " << u_tmp
-//                   << ", subtrahend == " << subtrahend
-//                   << ", borrow = " << borrow << '\n');
+      errs() << "KnuthDiv: u_tmp == " << u_tmp
+                   << ", subtrahend == " << subtrahend
+                   << ", borrow = " << borrow << '\n';
 
       uint64_t result = u_tmp - subtrahend;
       unsigned k = j + i;
@@ -1670,12 +1670,12 @@ static void KnuthDiv(unsigned *u, unsigned *v, unsigned *q, unsigned* r,
         k++;
       }
       isNeg |= borrow;
-//      DEBUG(errs() << "KnuthDiv: u[j+i] == " << u[j+i] << ",  u[j+i+1] == " <<
-//                    u[j+i+1] << '\n');
+      errs() << "KnuthDiv: u[j+i] == " << u[j+i] << ",  u[j+i+1] == " <<
+                    u[j+i+1] << '\n';
     }
-//    DEBUG(errs() << "KnuthDiv: after subtraction:");
-//    DEBUG(for (int i = m+n; i >=0; i--) errs() << " " << u[i]);
-//    DEBUG(errs() << '\n');
+    errs() << "KnuthDiv: after subtraction:";
+    for (int i = m+n; i >=0; i--) errs() << " " << u[i];
+        errs() << '\n';
     // The digits (u[j+n]...u[j]) should be kept positive; if the result of
     // this step is actually negative, (u[j+n]...u[j]) should be left as the
     // true value plus b**(n+1), namely as the b's complement of
@@ -1688,9 +1688,9 @@ static void KnuthDiv(unsigned *u, unsigned *v, unsigned *q, unsigned* r,
         carry = carry && u[i] == 0;
       }
     }
-//    DEBUG(errs() << "KnuthDiv: after complement:");
-//    DEBUG(for (int i = m+n; i >=0; i--) errs() << " " << u[i]);
-//    DEBUG(errs() << '\n');
+    errs() << "KnuthDiv: after complement:";
+    for (int i = m+n; i >=0; i--) errs() << " " << u[i];
+        errs() << '\n';
 
     // D5. [Test remainder.] Set q[j] = qp. If the result of step D4 was
     // negative, go to step D6; otherwise go on to step D7.
@@ -1711,16 +1711,16 @@ static void KnuthDiv(unsigned *u, unsigned *v, unsigned *q, unsigned* r,
       }
       u[j+n] += carry;
     }
-//    DEBUG(errs() << "KnuthDiv: after correction:");
-//    DEBUG(for (int i = m+n; i >=0; i--) errs() <<" " << u[i]);
-//    DEBUG(errs() << "\nKnuthDiv: digit result = " << q[j] << '\n');
+    errs() << "KnuthDiv: after correction:";
+    for (int i = m+n; i >=0; i--) errs() <<" " << u[i];
+    errs() << "\nKnuthDiv: digit result = " << q[j] << '\n';
 
   // D7. [Loop on j.]  Decrease j by one. Now if j >= 0, go back to D3.
   } while (--j >= 0);
 
-//  DEBUG(errs() << "KnuthDiv: quotient:");
-//  DEBUG(for (int i = m; i >=0; i--) errs() <<" " << q[i]);
-//  DEBUG(errs() << '\n');
+  errs() << "KnuthDiv: quotient:";
+  for (int i = m; i >=0; i--) errs() <<" " << q[i];
+  errs() << '\n';
 
   // D8. [Unnormalize]. Now q[...] is the desired quotient, and the desired
   // remainder may be obtained by dividing u[...] by d. If r is non-null we
@@ -1731,19 +1731,19 @@ static void KnuthDiv(unsigned *u, unsigned *v, unsigned *q, unsigned* r,
     // shift right here. In order to mak
     if (shift) {
       unsigned carry = 0;
-//      DEBUG(errs() << "KnuthDiv: remainder:");
+      errs() << "KnuthDiv: remainder:";
       for (int i = n-1; i >= 0; i--) {
         r[i] = (u[i] >> shift) | carry;
         carry = u[i] << (32 - shift);
-//        DEBUG(errs() << " " << r[i]);
+        errs() << " " << r[i];
       }
     } else {
       for (int i = n-1; i >= 0; i--) {
         r[i] = u[i];
-//        DEBUG(errs() << " " << r[i]);
+        errs() << " " << r[i];
       }
     }
-//    DEBUG(errs() << '\n');
+    errs() << '\n';
   }
 #if 0
   DEBUG(errs() << '\n');
