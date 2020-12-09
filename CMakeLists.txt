@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.14.1)
 project(cptoyc)
 set(CMAKE_CXX_STANDARD 17)
 
-add_subdirectory(Basic)
-add_subdirectory(Frontend)
-add_subdirectory(Lex)
-add_subdirectory(llvm)
+file(GLOB Basic Basic/*.c*)
+file(GLOB llvm llvm/[^.]*.c*)
+file(GLOB Lex Lex/[^.]*.c*)
+file(GLOB Frontend Frontend/[^.]*.c*)
 
-add_executable(cptoyc main.cpp)
+#include_directories(Basic Lex llvm Frontend)
 
-target_link_libraries(cptoyc Basic Lex Frontend LLVMADT)
+add_executable(cptoyc main.cpp ${Basic} ${llvm} ${Lex} ${Frontend})
