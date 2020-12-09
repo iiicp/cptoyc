@@ -10,8 +10,8 @@
 
 #ifndef CPTOYC_HEADERSEARCH_H
 #define CPTOYC_HEADERSEARCH_H
-#include "../Lex/DirectoryLookup.h"
-#include "../llvm/StringMap.h"
+#include "Lex/DirectoryLookup.h"
+#include "llvm/StringMap.h"
 #include <vector>
 #include "FileManager.h"
 

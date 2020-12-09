@@ -11,7 +11,7 @@
 #include "Preprocessor.h"
 #include "MacroInfo.h"
 #include "LiteralSupport.h"
-#include "../llvm/APSInt.h"
+#include "llvm/APSInt.h"
 #include "LexDiagnostic.h"
 #include "token.h"
 

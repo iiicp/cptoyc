@@ -13,7 +13,7 @@
 
 #include <utility>
 #include <cassert>
-#include "../llvm/MemoryBuffer.h"
+#include "llvm/MemoryBuffer.h"
 
 namespace CPToyC {
     namespace Compiler {

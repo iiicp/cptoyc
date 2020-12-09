@@ -14,13 +14,13 @@
 #include "PPCallbacks.h"
 #include "TokenLexer.h"
 #include "DirectoryLookup.h"
-#include "../Basic/Diagnostic.h"
-#include "../Basic/IdentifierTable.h"
-#include "../Basic/SourceLocation.h"
-#include "../llvm/DenseMap.h"
-#include "../llvm/OwningPtr.h"
-#include "../llvm/Allocator.h"
-#include "../Basic/LangOptions.h"
+#include "Basic/Diagnostic.h"
+#include "Basic/IdentifierTable.h"
+#include "Basic/SourceLocation.h"
+#include "llvm/DenseMap.h"
+#include "llvm/OwningPtr.h"
+#include "llvm/Allocator.h"
+#include "Basic/LangOptions.h"
 #include <vector>
 
 namespace CPToyC {

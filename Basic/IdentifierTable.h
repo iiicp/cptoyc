@@ -11,10 +11,10 @@
 #ifndef CPTOYC_IDENTIFIERTABLE_H
 #define CPTOYC_IDENTIFIERTABLE_H
 
-#include "../llvm/StringMap.h"
-#include "../llvm/SmallString.h"
-#include "../llvm/OwningPtr.h"
-#include "../llvm/PointerLikeTypeTraits.h"
+#include "llvm/StringMap.h"
+#include "llvm/SmallString.h"
+#include "llvm/OwningPtr.h"
+#include "llvm/PointerLikeTypeTraits.h"
 #include "TokenKinds.h"
 #include <string>
 #include <cassert>

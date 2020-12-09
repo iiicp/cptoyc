@@ -15,7 +15,7 @@
 #define LLVM_CLANG_LEX_PPCALLBACKS_H
 
 #include "DirectoryLookup.h"
-#include "../Basic/SourceLocation.h"
+#include "Basic/SourceLocation.h"
 #include <string>
 
 namespace CPToyC {

@@ -11,9 +11,9 @@
 #ifndef CPTOYC_FILEMANAGER_H
 #define CPTOYC_FILEMANAGER_H
 
-#include "../llvm/StringMap.h"
-#include "../llvm/OwningPtr.h"
-#include "../llvm/Allocator.h"
+#include "llvm/StringMap.h"
+#include "llvm/OwningPtr.h"
+#include "llvm/Allocator.h"
 #include <map>
 #include <set>
 #include <string>

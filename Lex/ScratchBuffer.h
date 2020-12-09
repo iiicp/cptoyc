@@ -10,7 +10,7 @@
 
 #ifndef CPTOYC_SCRATCHBUFFER_H
 #define CPTOYC_SCRATCHBUFFER_H
-#include "../Basic/SourceLocation.h"
+#include "Basic/SourceLocation.h"
 
 namespace CPToyC {
     namespace Compiler {

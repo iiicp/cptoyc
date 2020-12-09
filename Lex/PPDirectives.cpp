@@ -9,12 +9,12 @@
 ***********************************/
 
 #include "Preprocessor.h"
-#include "../Basic/HeaderSearch.h"
+#include "Basic/HeaderSearch.h"
 #include "MacroInfo.h"
-#include "../Basic/SourceManager.h"
+#include "Basic/SourceManager.h"
 #include "LiteralSupport.h"
 #include "LexDiagnostic.h"
-#include "../llvm/APInt.h"
+#include "llvm/APInt.h"
 
 using namespace CPToyC::Compiler;
 

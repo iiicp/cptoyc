@@ -10,7 +10,7 @@
 #ifndef LLVM_CLANG_DIAGNOSTICLEX_H
 #define LLVM_CLANG_DIAGNOSTICLEX_H
 
-#include "../Basic/Diagnostic.h"
+#include "Basic/Diagnostic.h"
 
 namespace CPToyC {
     namespace Compiler {

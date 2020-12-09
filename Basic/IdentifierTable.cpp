@@ -9,8 +9,8 @@
 ***********************************/
 
 #include "IdentifierTable.h"
-#include "../llvm/FoldingSet.h"
-#include "../llvm/DenseMap.h"
+#include "llvm/FoldingSet.h"
+#include "llvm/DenseMap.h"
 #include <cstdio>
 #include "LangOptions.h"
 

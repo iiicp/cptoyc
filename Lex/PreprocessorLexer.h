@@ -12,7 +12,7 @@
 #define CPTOYC_PREPROCESSORLEXER_H
 #include "token.h"
 #include "MultipleIncludeOpt.h"
-#include "../llvm/SmallVector.h"
+#include "llvm/SmallVector.h"
 
 namespace CPToyC {
     namespace Compiler {

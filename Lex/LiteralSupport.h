@@ -11,7 +11,7 @@
 #ifndef CPTOYC_LITERALSUPPORT_H
 #define CPTOYC_LITERALSUPPORT_H
 #include <string>
-#include "../llvm/SmallString.h"
+#include "llvm/SmallString.h"
 
 namespace llvm {
     class APInt;

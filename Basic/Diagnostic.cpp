@@ -12,7 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Diagnostic.h"
-#include "../Lex/LexDiagnostic.h"
+#include "Lex/LexDiagnostic.h"
 //#include "clang/Parse/ParseDiagnostic.h"
 //#include "clang/AST/ASTDiagnostic.h"
 //#include "clang/Sema/SemaDiagnostic.h"

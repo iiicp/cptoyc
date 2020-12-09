@@ -10,9 +10,9 @@
 
 #include "MacroInfo.h"
 #include "MacroArgs.h"
-#include "../Basic/FileManager.h"
+#include "Basic/FileManager.h"
 #include "Preprocessor.h"
-#include "../Basic/IdentifierTable.h"
+#include "Basic/IdentifierTable.h"
 #include "LexDiagnostic.h"
 
 using namespace CPToyC::Compiler;

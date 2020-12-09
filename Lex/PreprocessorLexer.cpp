@@ -11,7 +11,7 @@
 #include "PreprocessorLexer.h"
 #include "Preprocessor.h"
 #include "LexDiagnostic.h"
-#include "../Basic/SourceManager.h"
+#include "Basic/SourceManager.h"
 
 using namespace CPToyC::Compiler;
 

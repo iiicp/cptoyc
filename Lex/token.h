@@ -13,8 +13,8 @@
 
 #include <string>
 #include <iostream>
-#include "../Basic/TokenKinds.h"
-#include "../Basic/SourceLocation.h"
+#include "Basic/TokenKinds.h"
+#include "Basic/SourceLocation.h"
 #include <cstdlib>
 
 namespace CPToyC {

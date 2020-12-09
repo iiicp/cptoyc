@@ -14,7 +14,7 @@
 #ifndef CLANG_LEX_TOKEN_CONCATENATION_H
 #define CLANG_LEX_TOKEN_CONCATENATION_H
 
-#include "../Basic/TokenKinds.h"
+#include "Basic/TokenKinds.h"
 
 namespace CPToyC {
     namespace Compiler {

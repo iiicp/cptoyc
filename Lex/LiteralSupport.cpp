@@ -11,7 +11,7 @@
 #include "LiteralSupport.h"
 #include "Preprocessor.h"
 #include "LexDiagnostic.h"
-#include "../llvm/StringExtras.h"
+#include "llvm/StringExtras.h"
 
 using namespace CPToyC::Compiler;
 

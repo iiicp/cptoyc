@@ -12,8 +12,8 @@
 #define CPTOYC_MACROINFO_H
 
 #include "token.h"
-#include "../llvm/SmallVector.h"
-#include "../llvm/Allocator.h"
+#include "llvm/SmallVector.h"
+#include "llvm/Allocator.h"
 #include <vector>
 #include <cassert>
 

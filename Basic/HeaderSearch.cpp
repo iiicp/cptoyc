@@ -12,7 +12,7 @@
 #include "HeaderMap.h"
 #include "FileManager.h"
 #include "IdentifierTable.h"
-#include "../llvm/SmallString.h"
+#include "llvm/SmallString.h"
 #include <unistd.h>
 using namespace CPToyC::Compiler;
 

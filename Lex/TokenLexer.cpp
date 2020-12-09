@@ -12,9 +12,9 @@
 #include "MacroArgs.h"
 #include "MacroInfo.h"
 #include "Preprocessor.h"
-#include "../Basic/SourceManager.h"
+#include "Basic/SourceManager.h"
 #include "LexDiagnostic.h"
-#include "../llvm/SmallVector.h"
+#include "llvm/SmallVector.h"
 
 using namespace CPToyC::Compiler;
 

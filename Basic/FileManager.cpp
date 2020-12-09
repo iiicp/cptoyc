@@ -9,7 +9,7 @@
 ***********************************/
 
 #include "FileManager.h"
-#include "../llvm/SmallString.h"
+#include "llvm/SmallString.h"
 #include <iostream>
 
 using namespace CPToyC::Compiler;

@@ -13,8 +13,8 @@
 #include <memory>
 #include <map>
 #include <unordered_map>
-#include "../llvm/SmallVector.h"
-#include "../Basic/LangOptions.h"
+#include "llvm/SmallVector.h"
+#include "Basic/LangOptions.h"
 #include "PreprocessorLexer.h"
 
 namespace CPToyC {

@@ -15,10 +15,10 @@
 #include <cstdint>
 #include <vector>
 #include <cassert>
-#include "../llvm/MemoryBuffer.h"
-#include "../llvm/DenseMap.h"
-#include "../llvm/Allocator.h"
-#include "../llvm/StringMap.h"
+#include "llvm/MemoryBuffer.h"
+#include "llvm/DenseMap.h"
+#include "llvm/Allocator.h"
+#include "llvm/StringMap.h"
 #include <map>
 
 namespace CPToyC {

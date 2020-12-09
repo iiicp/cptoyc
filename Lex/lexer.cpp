@@ -10,9 +10,9 @@
 
 #include "lexer.h"
 #include "Preprocessor.h"
-#include "../Basic/SourceManager.h"
-#include "../llvm/MemoryBuffer.h"
-#include "../Basic/IdentifierTable.h"
+#include "Basic/SourceManager.h"
+#include "llvm/MemoryBuffer.h"
+#include "Basic/IdentifierTable.h"
 #include "LexDiagnostic.h"
 #include <iostream>
 #include <cctype>

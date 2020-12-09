@@ -9,7 +9,7 @@
 ***********************************/
 
 #include "ScratchBuffer.h"
-#include "../Basic/SourceManager.h"
+#include "Basic/SourceManager.h"
 
 using namespace CPToyC::Compiler;
 

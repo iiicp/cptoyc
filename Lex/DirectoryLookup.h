@@ -10,7 +10,7 @@
 
 #ifndef CPTOYC_DIRECTORYLOOKUP_H
 #define CPTOYC_DIRECTORYLOOKUP_H
-#include "../Basic/SourceManager.h"
+#include "Basic/SourceManager.h"
 namespace CPToyC {
     namespace Compiler {
         class HeaderMap;

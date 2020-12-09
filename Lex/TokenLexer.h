@@ -11,7 +11,7 @@
 #ifndef CPTOYC_TOKENLEXER_H
 #define CPTOYC_TOKENLEXER_H
 
-#include "../Basic/SourceLocation.h"
+#include "Basic/SourceLocation.h"
 
 namespace CPToyC {
     namespace Compiler {

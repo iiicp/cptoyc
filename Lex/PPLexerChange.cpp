@@ -9,11 +9,11 @@
 ***********************************/
 
 #include "DirectoryLookup.h"
-#include "../Basic/IdentifierTable.h"
+#include "Basic/IdentifierTable.h"
 #include "Preprocessor.h"
 #include "PreprocessorLexer.h"
-#include "../Basic/SourceManager.h"
-#include "../Basic/HeaderSearch.h"
+#include "Basic/SourceManager.h"
+#include "Basic/HeaderSearch.h"
 #include "LexDiagnostic.h"
 #include "MacroInfo.h"
 

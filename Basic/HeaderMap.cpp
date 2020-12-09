@@ -11,10 +11,10 @@
 #include "HeaderMap.h"
 #include "FileManager.h"
 #include <memory>
-#include "../llvm/MathExtras.h"
-#include "../llvm/MemoryBuffer.h"
-#include "../llvm/OwningPtr.h"
-#include "../llvm/SmallString.h"
+#include "llvm/MathExtras.h"
+#include "llvm/MemoryBuffer.h"
+#include "llvm/OwningPtr.h"
+#include "llvm/SmallString.h"
 #include <cstdio>
 
 using namespace CPToyC::Compiler;

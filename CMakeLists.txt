@@ -7,6 +7,11 @@ file(GLOB llvm llvm/[^.]*.c*)
 file(GLOB Lex Lex/[^.]*.c*)
 file(GLOB Frontend Frontend/[^.]*.c*)
 
-#include_directories(Basic Lex llvm Frontend)
+include_directories(
+        ${PROJECT_SOURCE_DIR}
+        ${PROJECT_SOURCE_DIR}/Basic
+        ${PROJECT_SOURCE_DIR}/Lex
+        ${PROJECT_SOURCE_DIR}/llvm
+        ${PROJECT_SOURCE_DIR}/Frontend)
 
 add_executable(cptoyc main.cpp ${Basic} ${llvm} ${Lex} ${Frontend})
